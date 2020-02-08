@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TranslateView</class>
+ <widget class="QWidget" name="TranslateView">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>830</width>
+    <height>807</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="TranslateView_2">
+   <item>
+    <widget class="CustomTableWidget" name="translationTable">
+     <property name="sizeAdjustPolicy">
+      <enum>QAbstractScrollArea::AdjustIgnored</enum>
+     </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SingleSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
+     <property name="showGrid">
+      <bool>true</bool>
+     </property>
+     <property name="sortingEnabled">
+      <bool>false</bool>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
+     </property>
+     <property name="cornerButtonEnabled">
+      <bool>true</bool>
+     </property>
+     <property name="columnCount">
+      <number>2</number>
+     </property>
+     <attribute name="horizontalHeaderVisible">
+      <bool>true</bool>
+     </attribute>
+     <attribute name="horizontalHeaderCascadingSectionResizes">
+      <bool>true</bool>
+     </attribute>
+     <attribute name="horizontalHeaderMinimumSectionSize">
+      <number>63</number>
+     </attribute>
+     <attribute name="horizontalHeaderHighlightSections">
+      <bool>true</bool>
+     </attribute>
+     <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="horizontalHeaderStretchLastSection">
+      <bool>true</bool>
+     </attribute>
+     <attribute name="verticalHeaderVisible">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderCascadingSectionResizes">
+      <bool>true</bool>
+     </attribute>
+     <attribute name="verticalHeaderHighlightSections">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderShowSortIndicator" stdset="0">
+      <bool>false</bool>
+     </attribute>
+     <attribute name="verticalHeaderStretchLastSection">
+      <bool>false</bool>
+     </attribute>
+     <row>
+      <property name="text">
+       <string>New Row</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>New Row</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>New Row</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>New Row</string>
+      </property>
+     </row>
+     <row>
+      <property name="text">
+       <string>New Row</string>
+      </property>
+     </row>
+     <column>
+      <property name="text">
+       <string>Origin</string>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+     </column>
+     <column>
+      <property name="text">
+       <string>Translation</string>
+      </property>
+      <property name="font">
+       <font>
+        <weight>75</weight>
+        <bold>true</bold>
+       </font>
+      </property>
+     </column>
+     <item row="0" column="0">
+      <property name="text">
+       <string>ppojpeomgpkjmpkmegpkmpkermpkmpkemgpkmnokr</string>
+      </property>
+     </item>
+     <item row="0" column="1">
+      <property name="text">
+       <string>sdfsfsfeerferferfeerrferrerfr</string>
+      </property>
+     </item>
+     <item row="1" column="0">
+      <property name="text">
+       <string>ppojpeomgpkjmpkmegpkmpkermpkmpkemgpkmnokr</string>
+      </property>
+     </item>
+     <item row="1" column="1">
+      <property name="text">
+       <string>ppojpeomgpkjmpkmegpkmpkermpkmpkemgpkmnokr</string>
+      </property>
+     </item>
+     <item row="2" column="0">
+      <property name="text">
+       <string>ppojpeomgpkjmpkmegpkmpkermpkmpkemgpkmnokr</string>
+      </property>
+     </item>
+     <item row="2" column="1">
+      <property name="text">
+       <string>ppojpeomgpkjmpkmegpkmpkermpkmpkemgpkmnokr</string>
+      </property>
+     </item>
+     <item row="3" column="0">
+      <property name="text">
+       <string>ppojpeomgpkjmpkmegpkmpkermpkmpkemgpkmnokr</string>
+      </property>
+     </item>
+     <item row="3" column="1">
+      <property name="text">
+       <string>ppojpeomgpkjmpkmegpkmpkermpkmpkemgpkmnokr</string>
+      </property>
+     </item>
+     <item row="4" column="0">
+      <property name="text">
+       <string>ppojpeomgpkjmpkmegpkmpkermpkmpkemgpkmnokr</string>
+      </property>
+     </item>
+     <item row="4" column="1">
+      <property name="text">
+       <string>ppojpeomgpkjmpkmegpkmpkermpkmpkemgpkmnokr</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+   <item alignment="Qt::AlignRight">
+    <widget class="QPushButton" name="autoTranslateAllButton">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Maximum" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="text">
+      <string>Auto Translate All</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="originGroupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Ignored" vsizetype="Maximum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="layoutDirection">
+      <enum>Qt::LeftToRight</enum>
+     </property>
+     <property name="title">
+      <string>Origin</string>
+     </property>
+     <layout class="QVBoxLayout" name="originGroupBoxLayout">
+      <property name="leftMargin">
+       <number>11</number>
+      </property>
+      <property name="topMargin">
+       <number>11</number>
+      </property>
+      <property name="rightMargin">
+       <number>11</number>
+      </property>
+      <property name="bottomMargin">
+       <number>11</number>
+      </property>
+      <item>
+       <widget class="CustomTextEdit" name="originTextEdit">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>100</height>
+         </size>
+        </property>
+        <property name="readOnly">
+         <bool>true</bool>
+        </property>
+        <property name="html">
+         <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:7.8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;hahahsdfjadsbfjbeksjfjsb kjc kewrer&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        </property>
+        <property name="cursorWidth">
+         <number>0</number>
+        </property>
+        <property name="textInteractionFlags">
+         <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+        </property>
+        <property name="origin" stdset="0">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item alignment="Qt::AlignRight">
+       <widget class="QPushButton" name="autoTranslateButton">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="focusPolicy">
+         <enum>Qt::WheelFocus</enum>
+        </property>
+        <property name="accessibleName">
+         <string/>
+        </property>
+        <property name="layoutDirection">
+         <enum>Qt::LeftToRight</enum>
+        </property>
+        <property name="text">
+         <string>Auto Translate</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="translationGroupBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Ignored" vsizetype="Maximum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="title">
+      <string>Translation</string>
+     </property>
+     <layout class="QHBoxLayout" name="translationGroupBoxLayout">
+      <property name="leftMargin">
+       <number>11</number>
+      </property>
+      <property name="rightMargin">
+       <number>11</number>
+      </property>
+      <item>
+       <widget class="CustomTextEdit" name="translationTextEdit">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>100</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CustomTableWidget</class>
+   <extends>QTableWidget</extends>
+   <header>cutomWidgets.h</header>
+   <slots>
+    <signal>rowClickedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
+    <signal>rowChangedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
+    <slot>changeTextFromTextEdit(PyQt_PyObject,PyQt_PyObject)</slot>
+    <slot>clearTableSlot()</slot>
+   </slots>
+  </customwidget>
+  <customwidget>
+   <class>CustomTextEdit</class>
+   <extends>QTextEdit</extends>
+   <header>cutomWidgets.h</header>
+   <slots>
+    <signal>cellTextChanged(PyQt_PyObject,PyQt_PyObject)</signal>
+    <slot>setTextByRowSlot(PyQt_PyObject,PyQt_PyObject)</slot>
+    <slot>rowChangedSlot(PyQt_PyObject,PyQt_PyObject)</slot>
+   </slots>
+  </customwidget>
+ </customwidgets>
+ <tabstops>
+  <tabstop>translationTable</tabstop>
+  <tabstop>autoTranslateAllButton</tabstop>
+  <tabstop>originTextEdit</tabstop>
+  <tabstop>autoTranslateButton</tabstop>
+  <tabstop>translationTextEdit</tabstop>
+ </tabstops>
+ <resources/>
+ <connections>
+  <connection>
+   <sender>translationTable</sender>
+   <signal>rowClickedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
+   <receiver>originTextEdit</receiver>
+   <slot>setTextByRowSlot(PyQt_PyObject,PyQt_PyObject)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>357</x>
+     <y>403</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>374</x>
+     <y>518</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translationTable</sender>
+   <signal>rowClickedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
+   <receiver>translationTextEdit</receiver>
+   <slot>setTextByRowSlot(PyQt_PyObject,PyQt_PyObject)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>465</x>
+     <y>425</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>448</x>
+     <y>696</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translationTextEdit</sender>
+   <signal>cellTextChanged(PyQt_PyObject,PyQt_PyObject)</signal>
+   <receiver>translationTable</receiver>
+   <slot>changeTextFromTextEdit(PyQt_PyObject,PyQt_PyObject)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>529</x>
+     <y>705</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>534</x>
+     <y>382</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>autoTranslateAllButton</sender>
+   <signal>clicked()</signal>
+   <receiver>translationTable</receiver>
+   <slot>clearTableSlot()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>733</x>
+     <y>454</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>649</x>
+     <y>419</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translationTable</sender>
+   <signal>rowChangedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
+   <receiver>originTextEdit</receiver>
+   <slot>rowChangedSlot(PyQt_PyObject,PyQt_PyObject)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>597</x>
+     <y>428</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>592</x>
+     <y>544</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>translationTable</sender>
+   <signal>rowChangedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
+   <receiver>translationTextEdit</receiver>
+   <slot>rowChangedSlot(PyQt_PyObject,PyQt_PyObject)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>303</x>
+     <y>431</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>247</x>
+     <y>717</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
+</ui>
