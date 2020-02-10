@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="TranslateView_2">
+  <layout class="QVBoxLayout" name="TranslateViewLayout">
    <item>
     <widget class="CustomTableWidget" name="translationTable">
      <property name="sizeAdjustPolicy">
@@ -348,7 +348,7 @@ p, li { white-space: pre-wrap; }
   <customwidget>
    <class>CustomTableWidget</class>
    <extends>QTableWidget</extends>
-   <header>cutomWidgets.h</header>
+   <header>TranslateView.h</header>
    <slots>
     <signal>rowClickedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
     <signal>rowChangedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
@@ -359,7 +359,7 @@ p, li { white-space: pre-wrap; }
   <customwidget>
    <class>CustomTextEdit</class>
    <extends>QTextEdit</extends>
-   <header>cutomWidgets.h</header>
+   <header>TranslateView.h</header>
    <slots>
     <signal>cellTextChanged(PyQt_PyObject,PyQt_PyObject)</signal>
     <signal>transalteSignal(int)</signal>

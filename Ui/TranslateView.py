@@ -118,7 +118,6 @@ class TranslateView(QtWidgets.QWidget):
         super(TranslateView, self).__init__(*args, **kwargs)
         uic.loadUi('TranslateView.ui', self)
         self.translationData = self.translationData
-        # self.translationData = ([1,2,3,4,5,6,6], [1,2,3,4,5,6,6])
     
     def _translate(self, data):
         """
@@ -132,15 +131,10 @@ class TranslateView(QtWidgets.QWidget):
     def translateRangeSlot(self, start, end):
         data = self.translationTable.getColumnDataInRange(0, start, end)
         translatedData = self._translate(data)
-        print(start, end)
-        print(data)
-        print(translatedData)
         self.translationTable.setColumnDataInRange(1, start, end, translatedData)
 
     @QtCore.pyqtSlot()
     def translateAllSlot(self):
-        print('Translate All')
-        print(self.translationTable.rowCount())
         self.translateRangeSlot(0, self.translationTable.rowCount())
     
     @QtCore.pyqtSlot(int)
