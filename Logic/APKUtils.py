@@ -61,7 +61,6 @@ def getAPKLang(dpath, lang):
         return '', '', []
     
     langPath = f'{valuesPath}-{lang}'
-    print(langPath)
     os.mkdir(langPath) if not os.path.exists(langPath) else None
     return valuesPath, langPath, map(os.path.basename, getTranslatableXmls(valuesPath))
 

@@ -20,7 +20,6 @@ class BaseData(object):
     def __init__(self, *args, **kwargs):
         super(BaseData, self).__init__(*args, **kwargs)
         self._path = os.path.join(self.DIR, self.FILE)
-        print(self.DIR)
         
         # Create data dir if not exists.
         if not os.path.exists(self.DIR):
@@ -90,7 +89,6 @@ class Caching(BaseData):
     
     def getDecompiled(self, apkPath):
         apkPath = os.path.abspath(apkPath)
-        print(self.DIR)
         if apkPath in self._data['decompiled']:
             return self._data['decompiled'][apkPath]
         
