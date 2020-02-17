@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ChooseLocaleDialog</class>
- <widget class="QDialog" name="ChooseLocaleDialog">
+ <class>ChooseLanguageDialog</class>
+ <widget class="QDialog" name="ChooseLanguageDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -23,20 +23,14 @@
    <item>
     <layout class="QFormLayout" name="formLayout_2">
      <item row="0" column="0">
-      <widget class="QLabel" name="ChooseLocaleLable">
+      <widget class="QLabel" name="ChooseLanguageLable">
        <property name="text">
-        <string>Choose target locale</string>
+        <string>Language: </string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QComboBox" name="localeComboBox">
-       <item>
-        <property name="text">
-         <string>Combo Box item</string>
-        </property>
-       </item>
-      </widget>
+      <widget class="QComboBox" name="languageComboBox"/>
      </item>
     </layout>
    </item>
@@ -54,7 +48,7 @@
   <connection>
    <sender>DialogButtons</sender>
    <signal>accepted()</signal>
-   <receiver>ChooseLocaleDialog</receiver>
+   <receiver>ChooseLanguageDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -70,7 +64,7 @@
   <connection>
    <sender>DialogButtons</sender>
    <signal>rejected()</signal>
-   <receiver>ChooseLocaleDialog</receiver>
+   <receiver>ChooseLanguageDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

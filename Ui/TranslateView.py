@@ -1,6 +1,12 @@
-from PyQt5 import QtCore, QtGui, QtWidgets, uic
+from os import path
+import threading
 
+from PyQt5 import QtCore, QtGui, QtWidgets
+from UiLoader import getUiClass
+from PickLanguageDialog import PickLanguageDialog
+from Message import Message
 
+TranslatingDialog = getUiClass(path.abspath(path.join(path.dirname(__file__), 'TranslatingDialog.ui')))
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                                                             #
 # Important!  pyqt5 versions 5.12.0 to 5.13.0 when using Python 3.7.x has a bag. Be carefull  #
@@ -8,16 +14,20 @@ from PyQt5 import QtCore, QtGui, QtWidgets, uic
 #                                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
+UI_FILE = path.abspath(path.join(path.dirname(__file__), 'TranslateView.ui'))
+stop = False
 class CustomTableWidget(QtWidgets.QTableWidget):
 
     # Signals
     rowClickedSignal = QtCore.pyqtSignal('PyQt_PyObject','PyQt_PyObject', arguments=['QTableWidgetItem', 'RowData'])
     rowChangedSignal = QtCore.pyqtSignal('PyQt_PyObject','PyQt_PyObject', arguments=['QTableWidgetItem', 'RowData'])
+    setCellTextSignal = QtCore.pyqtSignal(int, int, str, arguments=['Row', 'Column', 'Text'])
 
     def __init__(self, *args, **kwargs):
         super(CustomTableWidget, self).__init__(*args, **kwargs)
         self.itemClicked['QTableWidgetItem*'].connect(self.rowClickedSlot)
         self.itemChanged['QTableWidgetItem*'].connect(self.rowChangedSlot)
+        self.setCellTextSignal.connect(self.setCellText)
     
     # Methodes
     def getRowData(self, rowNum):
@@ -30,9 +40,18 @@ class CustomTableWidget(QtWidgets.QTableWidget):
     def getColumnDataInRange(self, column, start, end):
         return [self.item(i, column).text() for i in range(start, end)]
     
-    def setColumnDataInRange(self, column, start, end, data):
-        for i in range(end - start):
-            self.item(start + i, column).setText(data[i])
+    def setColumnDataInRange(self, column, start, end, data, stop=None):
+        idx = start
+        for i in data:
+            if stop and stop():
+                break
+            if type(i) != str:
+                return i
+
+            self.setCellTextSignal.emit(idx, column, i)
+            idx += 1
+        # for i in range(end - start):
+        #     self.item(start + i, column).setText(data[i])
 
     def setData(self, data):
         self.clearTableSlot()
@@ -66,6 +85,12 @@ class CustomTableWidget(QtWidgets.QTableWidget):
     @QtCore.pyqtSlot()
     def clearTableSlot(self):
         self.setRowCount(0)
+    
+    @QtCore.pyqtSlot(int, int, str)
+    def setCellText(self, row, column, text):
+        self.item(row, column).setText(text)
+
+
 class CustomTextEdit(QtWidgets.QTextEdit):
 
     # Signals
@@ -112,13 +137,22 @@ class CustomTextEdit(QtWidgets.QTextEdit):
     def origin(self, value):
         self.translation = not value
 
-class TranslateView(QtWidgets.QWidget):
+
+class TranslateView(getUiClass(UI_FILE)):
+
+    transaltionErrorSignal = QtCore.pyqtSignal('PyQt_PyObject', arguments=['Exception'])
 
     def __init__(self, *args, **kwargs):
-        super(TranslateView, self).__init__(*args, **kwargs)
-        uic.loadUi('TranslateView.ui', self)
+        super(TranslateView, self).__init__( *args, **kwargs)
+        self._langPicker = None
+        self.langPickRet = {}
+        self._stopTransThread = [False]
+        self.transaltionErrorSignal.connect(self.transaltionErrorSlot)
+
+    def setupUi(self):
+        super(TranslateView, self).setupUi()
         self.translationData = self.translationData
-    
+
     def _translate(self, data):
         """
         Should be implemented in the logic part (this is the ui part)
@@ -126,12 +160,48 @@ class TranslateView(QtWidgets.QWidget):
         pass
         return [i*2 for i in data]
     
+    def pickLang(self, *args, **kwargs):
+        if not self._langPicker:
+            self._langPicker = PickLanguageDialog(*args, **kwargs)
+            self._langPicker.acceptedSignal.connect(self.pickLangSlot)
+        else:
+            self._langPicker.__init__(*args, **kwargs)
+        self._langPicker.exec()
+
+    def isTransThreadStopped(self):
+        return self._stopTransThread[-1]
+
     # Slots
+    @QtCore.pyqtSlot()
+    def stopTransThread(self):
+        self._stopTransThread.append(True)
+
+    @QtCore.pyqtSlot('PyQt_PyObject')
+    def pickLangSlot(self, ret):
+        self.langPickRet = ret
+
     @QtCore.pyqtSlot(int, int)
     def translateRangeSlot(self, start, end):
+        self._stopTransThread = [False]
+        thread = CustomQTThread(target=self._translateRange, tar_args=(start, end))
+        thread.start()
+        tg = TranslatingDialog()
+        tg.rejected.connect(self.stopTransThread)
+        thread.finished.connect(tg.reject)
+        tg.exec()
+        thread.quit()
+
+    def _translateRange(self, start, end):
         data = self.translationTable.getColumnDataInRange(0, start, end)
         translatedData = self._translate(data)
-        self.translationTable.setColumnDataInRange(1, start, end, translatedData)
+        ret = self.translationTable.setColumnDataInRange(1, start, end, translatedData, self.isTransThreadStopped)
+        if ret:
+            self.transaltionErrorSignal.emit(ret)
+
+    @QtCore.pyqtSlot('PyQt_PyObject')
+    def transaltionErrorSlot(self, exception):
+            m = Message(message=f'An error occure while translating: {exception}')
+            m.exec()
 
     @QtCore.pyqtSlot()
     def translateAllSlot(self):
@@ -163,4 +233,12 @@ class TranslateView(QtWidgets.QWidget):
         self.translationTextEdit.tableIdx = None
         self.originTextEdit.tableIdx = None
 
-
+class CustomQTThread(QtCore.QThread):
+    def __init__(self, *args, target, tar_args=() ,tar_kwargs={},  **kwargs):
+        super(CustomQTThread, self).__init__(*args, **kwargs)
+        self.target = target
+        self.args = tar_args
+        self.kwargs = tar_kwargs
+    
+    def run(self):
+        self.target(*self.args, **self.kwargs)
