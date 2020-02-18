@@ -33,17 +33,17 @@ class MainWindow(getUiClass(UI_FILE)):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         # self.action_Open_ROM.trigge
-        self.open(test_xml)
     
     def open(self, path):
         newTab = Translator(path=path)
-        name = os.path.basename(path).split('.')[0]
+        name = os.path.basename(path)
         # 
-        treeItem = CustomTreeItem(self.openProjectsTree)
-        treeItem.setText(0, name)
-        treeItem.tabPtr = newTab
+        # treeItem = CustomTreeItem(self.openProjectsTree)
+        # treeItem.setText(0, name)
+        # treeItem.tabPtr = newTab
         # .addChild(treeItem)
         self.tabs.addTab(newTab, name)
+        self.tabs.setCurrentWidget(newTab)
     
     def openROM(self, path):
         pass
@@ -57,10 +57,14 @@ class MainWindow(getUiClass(UI_FILE)):
     # Slots
     @QtCore.pyqtSlot(int)
     def closeTabSlot(self, idx):
-        print('Close tab requested')
         w = self.tabs.widget(idx)
         w.close()
         self.tabs.removeTab(idx)
+    
+    @QtCore.pyqtSlot(QtWidgets.QTreeWidgetItem, int)
+    def treeItemActivated(self, item, idx):
+        if item and item.tabPtr:
+            self.tabs.setCurrentWidget(item.tabPtr)
 
     # Events
     def dragEnterEvent(self, e):

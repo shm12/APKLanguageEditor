@@ -21,7 +21,7 @@ class PickLanguageDialog(getUiClass(UI_FILE)):
     acceptedSignal = QtCore.pyqtSignal('PyQt_PyObject', arguments=['ReturnDict'])
     rejectedSignal = QtCore.pyqtSignal()
 
-    def __init__(self, *args, langs=langs, setupUi=True, default=None, existLangs={}, onExist=CREATE, **kwargs):
+    def __init__(self, *args, langs=langs, setupUi=True, default="Hebrew", existLangs={}, onExist=CREATE, **kwargs):
         super(PickLanguageDialog, self).__init__( *args, setupUi=False, **kwargs)
         self.default = default
         self._langs = dict()

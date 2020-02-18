@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1013</width>
-    <height>763</height>
+    <height>720</height>
    </rect>
   </property>
   <property name="acceptDrops">
@@ -23,10 +23,19 @@
    <locale language="English" country="Israel"/>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
    <property name="layoutDirection">
     <enum>Qt::LeftToRight</enum>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout_2">
+   <layout class="QVBoxLayout" name="verticalLayout_2">
+    <property name="spacing">
+     <number>0</number>
+    </property>
     <property name="leftMargin">
      <number>0</number>
     </property>
@@ -41,27 +50,21 @@
     </property>
     <item>
      <widget class="QSplitter" name="splitter">
-      <property name="layoutDirection">
-       <enum>Qt::LeftToRight</enum>
-      </property>
-      <property name="autoFillBackground">
-       <bool>false</bool>
+      <property name="minimumSize">
+       <size>
+        <width>0</width>
+        <height>0</height>
+       </size>
       </property>
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <property name="opaqueResize">
-       <bool>true</bool>
-      </property>
-      <property name="handleWidth">
-       <number>6</number>
-      </property>
       <property name="childrenCollapsible">
        <bool>false</bool>
       </property>
-      <widget class="QTreeWidget" name="openProjectsTree">
+      <widget class="QScrollArea" name="scrollArea">
        <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <sizepolicy hsizetype="MinimumExpanding" vsizetype="Expanding">
          <horstretch>0</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -72,84 +75,123 @@
          <height>0</height>
         </size>
        </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>16777215</height>
-        </size>
+       <property name="widgetResizable">
+        <bool>true</bool>
        </property>
-       <property name="sizeIncrement">
-        <size>
-         <width>0</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="baseSize">
-        <size>
-         <width>200</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="layoutDirection">
-        <enum>Qt::LeftToRight</enum>
-       </property>
-       <property name="styleSheet">
-        <string notr="true"/>
-       </property>
-       <property name="locale">
-        <locale language="English" country="Israel"/>
-       </property>
-       <property name="frameShape">
-        <enum>QFrame::StyledPanel</enum>
-       </property>
-       <property name="frameShadow">
-        <enum>QFrame::Sunken</enum>
-       </property>
-       <column>
-        <property name="text">
-         <string>Open Projects</string>
+       <widget class="QWidget" name="scrollAreaWidgetContents_2">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>256</width>
+          <height>667</height>
+         </rect>
         </property>
-       </column>
-       <item>
-        <property name="text">
-         <string>New Item</string>
+        <property name="minimumSize">
+         <size>
+          <width>90</width>
+          <height>0</height>
+         </size>
         </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>New Item</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>New Item</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>New Item</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>New Item</string>
-        </property>
-        <item>
-         <property name="text">
-          <string>New Subitem</string>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <property name="spacing">
+          <number>0</number>
          </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>New Item</string>
+         <property name="leftMargin">
+          <number>0</number>
          </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>New Item</string>
+         <property name="topMargin">
+          <number>0</number>
          </property>
-        </item>
-       </item>
+         <property name="rightMargin">
+          <number>0</number>
+         </property>
+         <property name="bottomMargin">
+          <number>0</number>
+         </property>
+         <item>
+          <widget class="QTreeWidget" name="openEditors">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="itemsExpandable">
+            <bool>false</bool>
+           </property>
+           <property name="expandsOnDoubleClick">
+            <bool>false</bool>
+           </property>
+           <column>
+            <property name="text">
+             <string>Open Editors</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+         <item>
+          <widget class="QTreeWidget" name="projectsTree">
+           <property name="sizePolicy">
+            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+             <horstretch>0</horstretch>
+             <verstretch>0</verstretch>
+            </sizepolicy>
+           </property>
+           <property name="minimumSize">
+            <size>
+             <width>90</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="sizeIncrement">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="baseSize">
+            <size>
+             <width>200</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"/>
+           </property>
+           <property name="locale">
+            <locale language="English" country="Israel"/>
+           </property>
+           <property name="frameShape">
+            <enum>QFrame::StyledPanel</enum>
+           </property>
+           <property name="frameShadow">
+            <enum>QFrame::Sunken</enum>
+           </property>
+           <property name="horizontalScrollBarPolicy">
+            <enum>Qt::ScrollBarAlwaysOff</enum>
+           </property>
+           <property name="autoScroll">
+            <bool>false</bool>
+           </property>
+           <column>
+            <property name="text">
+             <string>Projects</string>
+            </property>
+           </column>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
       <widget class="QTabWidget" name="tabs">
        <property name="sizePolicy">
@@ -190,6 +232,7 @@
     </property>
     <addaction name="action_Open_ROM"/>
     <addaction name="action_Open_Apk"/>
+    <addaction name="actionOpen_XML"/>
     <addaction name="actionRecent"/>
     <addaction name="separator"/>
     <addaction name="actionSave"/>
@@ -248,6 +291,11 @@
     <string>Exit</string>
    </property>
   </action>
+  <action name="actionOpen_XML">
+   <property name="text">
+    <string>Open XML...</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections>
@@ -258,17 +306,18 @@
    <slot>closeTabSlot(int)</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>409</x>
-     <y>178</y>
+     <x>615</x>
+     <y>118</y>
     </hint>
     <hint type="destinationlabel">
-     <x>829</x>
-     <y>-21</y>
+     <x>629</x>
+     <y>-37</y>
     </hint>
    </hints>
   </connection>
  </connections>
  <slots>
   <slot>closeTabSlot(int)</slot>
+  <slot>treeItemActivated(QTreeWidgetItem*,int)</slot>
  </slots>
 </ui>
