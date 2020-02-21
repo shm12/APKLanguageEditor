@@ -1,5 +1,7 @@
 import os
-import xml.etree.ElementTree as ET
+import random
+import string
+from lxml import etree as ET
 
 
 DECOMPILED_SUFFIX = '-decompiled'
@@ -42,7 +44,7 @@ def getXmlTranslatables(path):
     l = xml.findall('string')
     for typ in ('string-array', 'plurals'):
         for item in xml.findall(typ):
-            l += list(item)
+            l += item
     return [i for i in l if isElementTranslatable(i)]
 
 def getAPKTranslatableXmls(dpath):
@@ -64,25 +66,30 @@ def getAPKLang(dpath, lang):
     os.mkdir(langPath) if not os.path.exists(langPath) else None
     return valuesPath, langPath, map(os.path.basename, getTranslatableXmls(valuesPath))
 
-def decompileAPK(path, outdir='', framework=''):
+def decompileAPK(path, outdir='', frameworks=[]):
 
     # Dest path
     newDirName = os.path.basename(path) + DECOMPILED_SUFFIX
     destPath = os.path.join(outdir, newDirName) if outdir else path + DECOMPILED_SUFFIX
 
     # Temporary change framework resourceses apk name
-    if framework:
-        fwPath = os.path.dirname(framework)
-        tmpFw = os.path.join(fwPath, '1.apk')
-        os.rename(framework, tmpFw)
+    # if framework:
+    #     fwPath = os.path.dirname(framework)
+    #     tmpFw = os.path.join(fwPath, '1.apk')
+    #     os.rename(framework, tmpFw)
+    
+    for frw in frameworks:
+        tag = ''.join(random.choice(string.ascii_lowercase) for i in range(7))
+        os.system(f'{JAVA} -jar {APKTOOL} if {frw}')
 
     # Run
-    cmd = f'{JAVA} -jar {APKTOOL} d {path} -f -o {destPath}{f" -p {fwPath}" if framework else ""}'
+    cmd = f'{JAVA} -jar {APKTOOL} d {path} -f -o {destPath}'
+    # cmd = f'{JAVA} -jar {APKTOOL} d {path} -f -o {destPath}{f" -p {fwPath}" if framework else ""}'
     ret = os.system(cmd)
 
     # Restore previouse resourceses apk name
-    if framework:
-        os.rename(tmpFw, framework)
+    # if framework:
+    #     os.rename(tmpFw, framework)
 
     # return
     return ret, destPath
@@ -90,6 +97,7 @@ def decompileAPK(path, outdir='', framework=''):
 def recompileAPK(path, outdir='', framework=''):
 
     # Dest path
+    path = os.path.normpath(path)
     apkName = os.path.basename(path)[:-len(DECOMPILED_SUFFIX)]
     destPath = os.path.join(outdir, apkName) if outdir else apkName
 

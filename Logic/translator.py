@@ -1,11 +1,12 @@
 import sys
 import os
 from shutil import copyfile
-import xml.etree.ElementTree as ET
+from lxml import etree as ET
 import translators as ts
 import urllib
 import requests
 import json
+import fnmatch
 from PyQt5 import QtCore
 
 DIR = os.path.join(os.path.dirname(__file__))
@@ -17,6 +18,12 @@ from .APKUtils import *
 from Ui.TranslateView import TranslateView, CustomQTThread
 import Ui.PickLanguageDialog as langOptions
 # from .common import apkToolPath
+
+t = QtCore.QThreadPool()
+t.setMaxThreadCount(1)
+
+frameworkDirNames = {'framework', 'system-framework', 'priv-app', 'app'}
+frameworkFileName = 'framework-res.apk'
 
 class Translator(TranslateView):
 
@@ -33,18 +40,39 @@ class Translator(TranslateView):
                                                             'kwargs',
                                                             'Return'])
 
-    def __init__(self, *args, path, framework=None, newLang=None, **kwargs):
-        super(Translator, self).__init__(*args, **kwargs)
+    def __init__(self,
+                *args,
+                path,
+                frameworks=None,
+                newLang=None,
+                destPath=None,
+                parent=None,
+                **kwargs):
+        super(Translator, self).__init__(*args, **kwargs, parent=parent)
 
-        self.newLang = newLang
+        # Ask for destiniation language and return if canceled
+        if newLang:
+            self.newLang = newLang
+            self.langPickRet = None
+        else:
+            self.pickLang(existLangs=cache.getExists(path),
+                          onExist=langOptions.EDIT)
+        if not self.newLang:
+            return
+
         self.path = path
-        self.framework = framework
+        self.name = os.path.basename(path)
+        self.dest = destPath
+        self.xml = []
         self.xmls = []
         self.apks = []
-        self.threadpool = QtCore.QThreadPool()
-        self.threadpool.setMaxThreadCount(5)
+        self.frameworks = frameworks
+        self.parent = parent
+
+        # Threads things
+        self.threadpool = t
+        # self.threadpool.setMaxThreadCount(5)
         self.decodeFinished.connect(self.decompileReturn)
-        # self.newLang = 'Hebrew'
 
         if os.path.isdir(path):
             self.openDir(path)
@@ -61,21 +89,24 @@ class Translator(TranslateView):
         else:
             self.openRomDir(path)
 
-    def openApk(self, path, framework=None):
+    def openApk(self, path, frameworks=[]):
+        # Are we need to decompile it?
         if cache.getDecompiled(path):
             return self.openAPKDir(cache.getDecompiled(path))
     
         if os.path.exists(path + DECOMPILED_SUFFIX):
             return self.openAPKDir(path + DECOMPILED_SUFFIX)
         
+        # We need to decompile it!
         cdir = cache.getRandomCacheDir(prefix='apk')
 
         thread = Worker(target=decompileAPK,
                         tar_args=(path, cdir),
-                        tar_kwargs={'framework': framework},
-                        callbackSignal=self.decodeFinished)
-        # thread.finished.connect(self.decompileReturn)
+                        tar_kwargs={'frameworks': frameworks},
+                        callbackSignal=self.decodeFinished,
+                        callback=self.decompileReturn)
         self.threadpool.start(thread)
+        # Continue open the apk in self.decompileReturn
 
     def decompileReturn(self, target, args, kwargs, ret):
         path = args[0] if args else kwargs['path']
@@ -83,84 +114,139 @@ class Translator(TranslateView):
         if err:
             self.errOpen(path)
         
+        # Save to cache
         cache.addDecompiled(path, dpath)
         cache.save()
+
+        # Continue open
         self.openAPKDir(dpath)
 
     def openAPKDir(self, path):
-        print('opening path')
-        if not self.newLang:
-            self.pickLang(default='Hebrew')
-        self.newLang = self.langPickRet['Lang']
+        self.parent.apks.append(self) if self.parent else None
         langCode = langs[self.newLang]
-
         originDir, destDir, xmls = getAPKLang(path, langCode)
         for xml in xmls:
             originXml = os.path.join(originDir, xml)
             destXml = os.path.join(destDir, xml)
-
-            self.xmls.append((originXml, destXml))
-        try:
-            self.translationData = self.readData()
-        except Exception as e:
-            print(e)
-            print(self.xmls)
-
-
+            t = Translator(path=originXml,
+                            destPath=destXml,
+                            newLang=self.newLang,
+                            setupUi=False,
+                            parent=self)
+            # t.dataUpdated.connect(self.childDataUpdated)
+            # self.xmls.append(t)
+            # self.data += t.data
+        # try:
+        #     self.translationData = self.readData()
+        # except Exception as e:
+            # print(e)
+            # print(self.xmls)
+    
     def openRomDir(self, path):
-        pass
-    
+        frameworks = findFile(frameworkFileName, path)
+        self.frameworks = frameworks
+        self.pickLang(default='Hebrew') if not self.newLang else None
+        
+        apkFiles = findFile('*.apk', path)
+        for apkPath in apkFiles:
+            apk = Translator(path=apkPath,
+                             frameworks=frameworks,
+                             newLang=self.newLang,
+                             setupUi=False,
+                             parent=self)
+        
+        for apkPath in findFile(f'*.apk{DECOMPILED_SUFFIX}', path):
+            apkPath = apkPath[:-len(DECOMPILED_SUFFIX)]
+            if apkPath not in apkFiles:
+                apk = Translator(path=apkPath,
+                                 frameworks=frameworks,
+                                 newLang=self.newLang,
+                                 setupUi=False,
+                                 parent=self)
+                # self.apks.append(apk)
+                # self.data += apk.data
+
     def openXml(self, path):
-        if not self.newLang:
-            self.pickLang(existLangs=cache.getExists(path), onExist=langOptions.EDIT)
-        self.newLang = self.langPickRet['Lang']
+        self.parent.xmls.append(self) if self.parent else None
+        #print(f'opening xml {path}')
+        # if self.langPickRet and (not self.langPickRet['Exists'] or \
+        #        self.langPickRet['onExists'] == langOptions.CREATE):
+        #     newXmlPath = None
+        #     pass
+        #     # xmlDir = os.path.dirname(path)
+        #     # newXmlBaseName = '.'.join(os.path.basename(path).split('.')[:-1])
+        #     # langCode = langs[self.langPickRet['Lang']]
+        #     # newXmlName = f'{newXmlBaseName}.{langCode}.xml'
+        #     # i = 0
+        #     # while(True):
+        #     #     newXmlName = newXmlName if not i else f'{newXmlBaseName}.{langCode}({i}).xml'
+        #     #     newXmlPath = os.path.join(xmlDir, newXmlName)
+        #     #     if os.path.exists(newXmlPath):
+        #     #         i += 1
+        #     #         continue
+        #     #     else:
+        #     #         break
+        #     # copyfile(path, os.path.join(xmlDir, newXmlName))
+        #     # cache.addExists(self.newLang, path, newXmlPath)
+        # else:
+        #     newXmlPath = cache.getExists(path)[self.newLang][0]
+        # newXmlPath = self.dest
+        # self.xmls.append((path, newXmlPath))
+        # # self.translationData = self.readData()
+        self.readData()
+        # self.dataUpdated.emit()
+        pass
         
-        if not self.langPickRet['Exists'] or self.langPickRet['onExists'] == langOptions.CREATE:
-            xmlDir = os.path.dirname(path)
-            newXmlBaseName = '.'.join(os.path.basename(path).split('.')[:-1])
-            langCode = langs[self.langPickRet['Lang']]
-            newXmlName = f'{newXmlBaseName}.{langCode}.xml'
-            i = 0
-            while(True):
-                newXmlName = newXmlName if not i else f'{newXmlBaseName}.{langCode}({i}).xml'
-                newXmlPath = os.path.join(xmlDir, newXmlName)
-                if os.path.exists(newXmlPath):
-                    i += 1
-                    continue
-                else:
-                    break
-            copyfile(path, os.path.join(xmlDir, newXmlName))
-            cache.addExists(self.newLang, path, newXmlPath)
-        else:
-            newXmlPath = cache.getExists(path)[self.newLang][0]
-            pass
-        self.xmls.append((path, newXmlPath))
-        self.translationData = self.readData()
-        
-
-
-
-    def _translate(self, data):
-        for text in data:
-            trnaslated = trans(text, langs[self.newLang])
-            yield trnaslated
-            if type(trnaslated) == dict:
-                break
-        # return [trans(i, langs[self.newLang]) for i in data]
-
+    # def readData(self):
+    #     final_list = [[],[]]
+    #     for origin, translation in self.xmls:
+    #         origData = self.readXml(origin)
+    #         final_list[0] += origData
+    #         final_list[1] += self.readXml(translation) if os.path.exists(translation) else origData
+    #     return final_list
     
-
-    def readXml(self, path):
-        return [i.text for i in getXmlTranslatables(path)]
-
     def readData(self):
-        final_list = [[],[]]
-        for origin, translation in self.xmls:
-            origData = self.readXml(origin)
-            final_list[0] += origData
-            final_list[1] += self.readXml(translation) if os.path.exists(translation) else origData
-        return final_list
+        dst_xml = ET.parse(self.dest) if (self.dest and os.path.exists(self.dest)) else None
+        l = []
+        for element in getXmlTranslatables(self.path):
+            entry = {}
+            if 'name' in element.attrib:
+                name = element.attrib['name']
+                entry['Name'] = name
+                entry['Translation'] = dst_xml.find(f"//{element.tag}[@name='{name}']") if dst_xml else None
+            else:
+                parent = element.getparent()
+                if 'name' not in parent.attrib:
+                    print('W: cannot process ', element)
+                    continue
+                parent_name = parent.attrib['name']
+                idx = parent.index(element)
+                entry['Name'] = '{0} [{1}]'.format(parent_name, idx)
+                dstparent = dst_xml.find(f"//{parent.tag}[@name='{parent_name}']") if dst_xml else None
+                entry['Translation'] = dstparent[idx] if dstparent else None
+            entry['element'] = element
+            entry['Origin'] = element.text
+            entry['Translation'] = entry['Translation'].text if entry['Translation'] else None
+            entry['keep'] = bool(entry['Translation'])
+            l.append(entry)
+        self.data = l
+    
+    def getChildren(self):
+        if self.apks:
+            return self.apks
+        elif self.xmls:
+            return self.xmls
+        # return None
 
+    def _translate(self, text):
+        print(text)
+        return trans(text, langs[self.newLang])
+        # for text in data:
+        #     trnaslated = trans(text, langs[self.newLang])
+        #     yield trnaslated
+        #     if type(trnaslated) == dict:
+        #         break
+        # return [trans(i, langs[self.newLang]) for i in data]
 
     def saveData(self):
         newData = self.translationData
@@ -176,7 +262,7 @@ class Translator(TranslateView):
             xml.write(translateXML)
 
     def closeEvent(self, e):
-        self.saveData()
+        # self.saveData()
         cache.save()
         e.accept()
 
@@ -212,18 +298,33 @@ def trans2(string, outLang):
 
 class Worker(QtCore.QRunnable):
 
-    def __init__(self, *args, target, tar_args=() ,tar_kwargs={}, callbackSignal=None, **kwargs):
+    def __init__(self, *args, target, tar_args=() ,tar_kwargs={}, callbackSignal=None, callBackEmptySignal=None, callback=None, **kwargs):
         super(Worker, self).__init__(*args, **kwargs)
+        self.setAutoDelete(True)
         self.target = target
         self.args = tar_args
         self.kwargs = tar_kwargs
         self.callbackSignal = callbackSignal
+        self.callBackEmptySignal = callBackEmptySignal
+        self.callback = callback
     
     @QtCore.pyqtSlot()
     def run(self):
         ret = self.target(*self.args, **self.kwargs)
+        self.callback(self.target,
+                      self.args,
+                      self.kwargs,
+                      ret) if self.callback else None
         self.callbackSignal.emit(self.target,
                                  self.args,
                                  self.kwargs,
                                  ret) if self.callbackSignal else None
+        self.callBackEmptySignal.emit() if self.callBackEmptySignal else None
 
+def findFile(pattern, path):
+    result = []
+    for root, dirs, files in os.walk(path):
+        for name in files:
+            if fnmatch.fnmatch(name, pattern):
+                result.append(os.path.join(root, name))
+    return result

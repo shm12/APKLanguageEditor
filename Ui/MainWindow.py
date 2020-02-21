@@ -1,30 +1,30 @@
 import os
-from os import path
 import threading
 import sys
 
-DIR = path.join(path.dirname(__file__))
-sys.path.append(path.join(DIR, '..'))
+DIR = os.path.join(os.path.dirname(__file__))
+sys.path.append(os.path.join(DIR, '..'))
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from UiLoader import getUiClass
-from Logic.translator import Translator
+from trees import ProjectTreeItem
+from Logic.translator import Translator, t
 from Logic.APKUtils import isFileOfType
 
-test_xml = path.join(DIR, '..', 'tmp', 'strings.xml')
-test_apk = path.join(DIR, '..', 'tmp', 'Bluetooth.apk')
-test_frw = path.join(DIR, '..', 'tmp', 'framework-res.apk')
+test_xml = os.path.join(DIR, '..', 'tmp', 'strings.xml')
+test_apk = os.path.join(DIR, '..', 'tmp', 'Bluetooth.apk')
+test_frw = os.path.join(DIR, '..', 'tmp', 'framework-res.apk')
 
 
-UI_FILE = path.abspath(path.join(path.dirname(__file__), 'MainWindow.ui'))
+UI_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), 'MainWindow.ui'))
 
-class CustomTreeItem(QtWidgets.QTreeWidgetItem):
-    """
-    Description for CustomTreeItem.
-    """
-    def __init__(self, *args, **kwargs):
-        super(CustomTreeItem, self).__init__(*args, **kwargs)
-        self.tabPtr = None
+sys._excepthook = sys.excepthook 
+def exception_hook(exctype, value, traceback):
+    print(exctype, value, traceback)
+    sys._excepthook(exctype, value, traceback) 
+    sys.exit(1) 
+sys.excepthook = exception_hook 
+
 
 class MainWindow(getUiClass(UI_FILE)):
     """
@@ -32,41 +32,28 @@ class MainWindow(getUiClass(UI_FILE)):
     """
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
+        self.threadpool = t
         # self.action_Open_ROM.trigge
     
+    def setupUi(self):
+        super(MainWindow, self).setupUi()
+        self.projectsTree.itemClicked.connect(self.tabs.addTranslator)
+        self.openEditors.itemClicked.connect(self.tabs.focus)
+        self.tabs.translatorAdded.connect(self.openEditors.addTranslator)
+        self.tabs.translatorClosed.connect(self.openEditors.removeTranslator)
+        self.tabs.focused.connect(self.openEditors.focus)
+        self.tabs.focused.connect(self.projectsTree.focus)
+
     def open(self, path):
-        newTab = Translator(path=path)
-        name = os.path.basename(path)
-        # 
-        # treeItem = CustomTreeItem(self.openProjectsTree)
-        # treeItem.setText(0, name)
-        # treeItem.tabPtr = newTab
-        # .addChild(treeItem)
-        self.tabs.addTab(newTab, name)
-        self.tabs.setCurrentWidget(newTab)
-    
-    def openROM(self, path):
-        pass
-
-    def openAPK(self, path):
-        pass
-
-    def openXML(self, path):
-        pass
-
-    # Slots
-    @QtCore.pyqtSlot(int)
-    def closeTabSlot(self, idx):
-        w = self.tabs.widget(idx)
-        w.close()
-        self.tabs.removeTab(idx)
-    
-    @QtCore.pyqtSlot(QtWidgets.QTreeWidgetItem, int)
-    def treeItemActivated(self, item, idx):
-        if item and item.tabPtr:
-            self.tabs.setCurrentWidget(item.tabPtr)
+        treeItem = ProjectTreeItem(Translator(path=path), children=True)
+        self.projectsTree.addTopLevelItem(treeItem)
+        if isFileOfType(path, 'xml'):
+            self.projectsTree.itemActivated.emit(treeItem, 0)
 
     # Events
+    def startDrag(self):
+        print('start drag')
+
     def dragEnterEvent(self, e):
         for url in e.mimeData().urls():
             if url.scheme() == 'file':

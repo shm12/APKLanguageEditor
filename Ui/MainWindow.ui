@@ -110,12 +110,9 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QTreeWidget" name="openEditors">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
+          <widget class="OpenEditors" name="openEditors">
+           <property name="frameShape">
+            <enum>QFrame::NoFrame</enum>
            </property>
            <property name="itemsExpandable">
             <bool>false</bool>
@@ -131,11 +128,11 @@
           </widget>
          </item>
          <item>
-          <widget class="QTreeWidget" name="projectsTree">
+          <widget class="OpenEditors" name="projectsTree">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
              <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
+             <verstretch>1</verstretch>
             </sizepolicy>
            </property>
            <property name="minimumSize">
@@ -148,12 +145,6 @@
             <size>
              <width>16777215</width>
              <height>16777215</height>
-            </size>
-           </property>
-           <property name="sizeIncrement">
-            <size>
-             <width>0</width>
-             <height>0</height>
             </size>
            </property>
            <property name="baseSize">
@@ -172,7 +163,7 @@
             <locale language="English" country="Israel"/>
            </property>
            <property name="frameShape">
-            <enum>QFrame::StyledPanel</enum>
+            <enum>QFrame::NoFrame</enum>
            </property>
            <property name="frameShadow">
             <enum>QFrame::Sunken</enum>
@@ -182,6 +173,9 @@
            </property>
            <property name="autoScroll">
             <bool>false</bool>
+           </property>
+           <property name="animated">
+            <bool>true</bool>
            </property>
            <column>
             <property name="text">
@@ -193,7 +187,7 @@
         </layout>
        </widget>
       </widget>
-      <widget class="QTabWidget" name="tabs">
+      <widget class="Tabs" name="tabs">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>7</horstretch>
@@ -297,25 +291,21 @@
    </property>
   </action>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>Tabs</class>
+   <extends>QTabWidget</extends>
+   <header>tabs.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>OpenEditors</class>
+   <extends>QTreeWidget</extends>
+   <header>trees.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
- <connections>
-  <connection>
-   <sender>tabs</sender>
-   <signal>tabCloseRequested(int)</signal>
-   <receiver>MainWindow</receiver>
-   <slot>closeTabSlot(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>615</x>
-     <y>118</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>629</x>
-     <y>-37</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
  <slots>
   <slot>closeTabSlot(int)</slot>
   <slot>treeItemActivated(QTreeWidgetItem*,int)</slot>

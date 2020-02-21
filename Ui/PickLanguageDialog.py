@@ -19,7 +19,7 @@ class PickLanguageDialog(getUiClass(UI_FILE)):
 
     # Signals
     acceptedSignal = QtCore.pyqtSignal('PyQt_PyObject', arguments=['ReturnDict'])
-    rejectedSignal = QtCore.pyqtSignal()
+    rejectedSignal = QtCore.pyqtSignal('PyQt_PyObject', arguments=['ReturnDictNoLang'])
 
     def __init__(self, *args, langs=langs, setupUi=True, default="Hebrew", existLangs={}, onExist=CREATE, **kwargs):
         super(PickLanguageDialog, self).__init__( *args, setupUi=False, **kwargs)
@@ -39,7 +39,6 @@ class PickLanguageDialog(getUiClass(UI_FILE)):
         # self.langExistGroupBox.setVisible(False)
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Ok).setAutoDefault(True)
         self.buttonBox.button(QtWidgets.QDialogButtonBox.Cancel).setAutoDefault(True)
-
 
         # Setup combo box
         if not self.default:
@@ -100,6 +99,9 @@ class PickLanguageDialog(getUiClass(UI_FILE)):
     
     @QtCore.pyqtSlot()
     def rejectedSlot(self):
-        self.rejectedSignal.emit()
+        ret = {
+            'Lang': '',
+        }
+        self.rejectedSignal.emit(ret)
 
 
