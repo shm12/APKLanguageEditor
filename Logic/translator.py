@@ -15,7 +15,7 @@ sys.path.append(os.path.join(DIR, '..'))
 from .main import cache
 from .languages import langs
 from .APKUtils import *
-from Ui.TranslateView import TranslateView, CustomQTThread
+from Ui.TranslateView import TranslateView
 import Ui.PickLanguageDialog as langOptions
 # from .common import apkToolPath
 
@@ -128,19 +128,12 @@ class Translator(TranslateView):
         for xml in xmls:
             originXml = os.path.join(originDir, xml)
             destXml = os.path.join(destDir, xml)
-            t = Translator(path=originXml,
+            Translator(path=originXml,
                             destPath=destXml,
                             newLang=self.newLang,
                             setupUi=False,
                             parent=self)
-            # t.dataUpdated.connect(self.childDataUpdated)
-            # self.xmls.append(t)
-            # self.data += t.data
-        # try:
-        #     self.translationData = self.readData()
-        # except Exception as e:
-            # print(e)
-            # print(self.xmls)
+
     
     def openRomDir(self, path):
         frameworks = findFile(frameworkFileName, path)
@@ -163,8 +156,7 @@ class Translator(TranslateView):
                                  newLang=self.newLang,
                                  setupUi=False,
                                  parent=self)
-                # self.apks.append(apk)
-                # self.data += apk.data
+
 
     def openXml(self, path):
         self.parent.xmls.append(self) if self.parent else None
@@ -191,20 +183,9 @@ class Translator(TranslateView):
         # else:
         #     newXmlPath = cache.getExists(path)[self.newLang][0]
         # newXmlPath = self.dest
-        # self.xmls.append((path, newXmlPath))
-        # # self.translationData = self.readData()
         self.readData()
-        # self.dataUpdated.emit()
         pass
-        
-    # def readData(self):
-    #     final_list = [[],[]]
-    #     for origin, translation in self.xmls:
-    #         origData = self.readXml(origin)
-    #         final_list[0] += origData
-    #         final_list[1] += self.readXml(translation) if os.path.exists(translation) else origData
-    #     return final_list
-    
+
     def readData(self):
         dst_xml = ET.parse(self.dest) if (self.dest and os.path.exists(self.dest)) else None
         l = []
@@ -239,14 +220,7 @@ class Translator(TranslateView):
         # return None
 
     def _translate(self, text):
-        print(text)
         return trans(text, langs[self.newLang])
-        # for text in data:
-        #     trnaslated = trans(text, langs[self.newLang])
-        #     yield trnaslated
-        #     if type(trnaslated) == dict:
-        #         break
-        # return [trans(i, langs[self.newLang]) for i in data]
 
     def saveData(self):
         newData = self.translationData
