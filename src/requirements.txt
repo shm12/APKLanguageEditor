@@ -1,0 +1,5 @@
+fbs
+PyQt5
+lxml
+translators
+appdirs
