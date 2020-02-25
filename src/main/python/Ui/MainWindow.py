@@ -1,30 +1,16 @@
 import os
 import threading
-import sys
-
-DIR = os.path.join(os.path.dirname(__file__))
-sys.path.append(os.path.join(DIR, '..'))
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from UiLoader import getUiClass
-from trees import ProjectTreeItem
+from Ui.UiLoader import getUiClass
+from Ui.trees import ProjectTreeItem
+from Ui.tabs import Tabs
 from Logic.translator import Translator, t
 from Logic.APKUtils import isFileOfType
 
-test_xml = os.path.join(DIR, '..', 'tmp', 'strings.xml')
-test_apk = os.path.join(DIR, '..', 'tmp', 'Bluetooth.apk')
-test_frw = os.path.join(DIR, '..', 'tmp', 'framework-res.apk')
+from appctx import ApplicationContext
 
-
-UI_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), 'MainWindow.ui'))
-
-sys._excepthook = sys.excepthook 
-def exception_hook(exctype, value, traceback):
-    print(exctype, value, traceback)
-    sys._excepthook(exctype, value, traceback) 
-    sys.exit(1) 
-sys.excepthook = exception_hook 
-
+UI_FILE = ApplicationContext.get_resource('MainWindow.ui')
 
 class MainWindow(getUiClass(UI_FILE)):
     """
@@ -33,7 +19,6 @@ class MainWindow(getUiClass(UI_FILE)):
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
         self.threadpool = t
-        # self.action_Open_ROM.trigge
     
     def setupUi(self):
         super(MainWindow, self).setupUi()
@@ -43,6 +28,37 @@ class MainWindow(getUiClass(UI_FILE)):
         self.tabs.translatorClosed.connect(self.openEditors.removeTranslator)
         self.tabs.focused.connect(self.openEditors.focus)
         self.tabs.focused.connect(self.projectsTree.focus)
+        self.action_Open_ROM.triggered.connect(self.menuOpenROM)
+        self.action_Open_APK.triggered.connect(self.menuOpenAPK)
+        self.action_Open_XML.triggered.connect(self.menuOpenXML)
+        self.actionSave.triggered.connect(self.tabs.save)
+        self.actionBuild.triggered.connect(self.tabs.build)
+
+        
+        # Shortcut
+        self.shortcutSave = QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+S'), self)
+        self.shortcutSaveAs = QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+S'), self)
+        self.shortcutOpenAPK = QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+O'), self)
+        # self.shortcut = QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+'), self)
+        # self.shortcut = QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+'), self)
+        # self.shortcut = QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+'), self)
+        self.shortcutSave.activated.connect(self.tabs.save)
+        # self.shortcutSaveAs.activated.connect(self.)
+        self.shortcutOpenAPK.activated.connect(self.menuOpenAPK)
+        
+    
+    def menuOpenROM(self):
+        romDir = QtWidgets.QFileDialog.getExistingDirectory(None, 'Select Rom Directory',)
+        self.open(romDir) if romDir else None
+    
+    def menuOpenAPK(self):
+        apkDir = QtWidgets.QFileDialog.getOpenFileName(None, 'Open APK File', filter='APK file (*.apk)')[0]
+        print(apkDir)
+        self.open(apkDir) if apkDir else None
+    
+    def menuOpenXML(self):
+        xmlPath = QtWidgets.QFileDialog.getOpenFileName(None, 'Open XML File', filter='XML file (*.xml)')[0]
+        self.open(xmlPath) if xmlPath else None
 
     def open(self, path):
         treeItem = ProjectTreeItem(Translator(path=path), children=True)

@@ -1,12 +1,16 @@
 from os import path
+import os
 import threading
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from UiLoader import getUiClass
-from PickLanguageDialog import PickLanguageDialog
-from Message import Message
+from Ui.UiLoader import getUiClass
+from Ui.PickLanguageDialog import PickLanguageDialog
+from Ui.Message import Message
 
-TranslatingDialog = getUiClass(path.abspath(path.join(path.dirname(__file__), 'TranslatingDialog.ui')))
+from appctx import ApplicationContext
+
+# TranslatingDialog = getUiClass(path.abspath(path.join(path.dirname(__file__), 'TranslatingDialog.ui')))
+TranslatingDialog = getUiClass(ApplicationContext.get_resource('TranslatingDialog.ui'))
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                                                             #
 # Important!  pyqt5 versions 5.12.0 to 5.13.0 when using Python 3.7.x has a bag. Be carefull  #
@@ -14,8 +18,10 @@ TranslatingDialog = getUiClass(path.abspath(path.join(path.dirname(__file__), 'T
 #                                                                                             #
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-UI_FILE = path.abspath(path.join(path.dirname(__file__), 'TranslateView.ui'))
-EXTENDEDEDIT_FILE = path.abspath(path.join(path.dirname(__file__), 'extendedEdit.ui'))
+# UI_FILE = path.abspath(path.join(path.dirname(__file__), 'TranslateView.ui'))
+# EXTENDEDEDIT_FILE = path.abspath(path.join(path.dirname(__file__), 'extendedEdit.ui'))
+UI_FILE = ApplicationContext.get_resource('TranslateView.ui')
+EXTENDEDEDIT_FILE =  ApplicationContext.get_resource('extendedEdit.ui')
 
 class CustomTableWidget(QtWidgets.QTableWidget):
 
@@ -26,6 +32,7 @@ class CustomTableWidget(QtWidgets.QTableWidget):
     def __init__(self, *args, **kwargs):
         super(CustomTableWidget, self).__init__(*args, **kwargs)
         self.headers = []
+        self.data = []
         self.currentItemChanged.connect(self.rowClickedSlot)
         self.itemChanged.connect(self.rowChangedSlot)
         self.rowChangedSignal.connect(self.updateRow)
@@ -34,6 +41,12 @@ class CustomTableWidget(QtWidgets.QTableWidget):
     def updateRow(self, row):
         self.item(row, self.headers.index('Translation')).setText(self.data[row]['Translation'])
     
+    def refresh(self):
+        transColumn = self.headers.index('Translation')
+        for i in range(len(self.data)):
+            self.item(i, transColumn).setText(self.data[i]['Translation'])
+
+
     def setData(self, headers, data):
         self.headers = headers
         self.clearTableSlot()
@@ -64,7 +77,9 @@ class CustomTableWidget(QtWidgets.QTableWidget):
     # Slots
     @QtCore.pyqtSlot(QtWidgets.QTableWidgetItem)
     def rowClickedSlot(self, current, *args, **kwargs):
-        self.rowClickedSignal.emit(current.row())
+
+        # if current:
+        self.rowClickedSignal.emit(self.currentRow())
 
     @QtCore.pyqtSlot(QtWidgets.QTableWidgetItem)
     def rowChangedSlot(self, QTableWidgetItem):
@@ -73,6 +88,7 @@ class CustomTableWidget(QtWidgets.QTableWidget):
         if not translationItem:
             return
         self.data[row]['Translation'] = translationItem.text()
+        self.data[row]['keep'] = True if self.data[row]['Translation'] == self.data[row]['Origin'] else False
         self.rowChangedSignal.emit(row)
 
     @QtCore.pyqtSlot()
@@ -161,9 +177,12 @@ class TranslateView(getUiClass(UI_FILE)):
         self._data = []
         self._stopTransThread = [False]
         self.dataUpdated.connect(self.refreshTable)
+        print('parent Name:',parent.name) if parent else None
         self.dataUpdated.connect(parent.childDataUpdated) if parent else None
 
     def setupUi(self):
+        if self._uiSet:
+            return
         super(TranslateView, self).setupUi()
         self.tg = None
         self.translationTable.setData(['Name', 'Origin', 'Translation'], list(self.data))
@@ -179,12 +198,18 @@ class TranslateView(getUiClass(UI_FILE)):
             self.setActiveRow(self.activeRow)
         self._uiSet = True
     
+    def focused(self, translator, *args, **kwargs):
+        if translator is not self:
+            return
+        self.refreshTable()
+    
     @QtCore.pyqtSlot(int)
     def updateExpendedEdit(self, row):
         self.expendedEdit.updateTranslation() if row == self.activeRow else None
     
     @QtCore.pyqtSlot()
     def updateActiveRow(self):
+        print(self.activeRow)
         self.translationTable.updateRow(self.activeRow) if self.activeRow != None else None
 
     @QtCore.pyqtSlot(int)
@@ -196,9 +221,11 @@ class TranslateView(getUiClass(UI_FILE)):
 
     def refreshTable(self):
         if self._uiSet:
-            self.translationTable.setData(['Name', 'Origin', 'Translation'], list(self.data))
+            self.translationTable.refresh()
+            # self.translationTable.setData(['Name', 'Origin', 'Translation'], list(self.data))
     
     def childDataUpdated(self):
+        print('childDataUpdated, ', self.name)
         self.dataUpdated.emit()
 
     def getChildren(self):
@@ -293,6 +320,37 @@ class TranslateView(getUiClass(UI_FILE)):
     def data(self, data):
         self._data = data
         self.dataUpdated.emit()
+    
+    @QtCore.pyqtSlot()
+    def save(self):
+        pass
+        self.saveData()
+    
+    def saveData(self):
+        """
+        Should be implemented in the logic part (this is the ui part)
+        """
+        pass
+
+    def getNewXMLPath(self, recommandedPath):
+        d = QtWidgets.QFileDialog(None, 'Save To XML', recommandedPath, 'XML file (*.xml)')
+        d.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+        d.setDefaultSuffix('xml')
+        d.exec()
+        xmlpath = d.selectedFiles()[0]
+        return xmlpath
+    
+    def getNewAPKPath(self, recommandedPath):
+        d = QtWidgets.QFileDialog(None, 'Save To APK', recommandedPath, 'XML file (*.apk)')
+        d.setAcceptMode(QtWidgets.QFileDialog.AcceptSave)
+        d.setDefaultSuffix('apk')
+        d.exec()
+        apkPath = d.selectedFiles()[0]
+        return apkPath
+    
+    def buildError(self, srcPath, dstPath):
+        m = Message(message=f'Could not build: {srcPath} into {dstPath}.\nYou may want to look in the logs.')
+        m.exec()
 
 class Worker(QtCore.QRunnable):
     

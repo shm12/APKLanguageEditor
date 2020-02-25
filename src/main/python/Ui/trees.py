@@ -6,8 +6,8 @@ DIR = os.path.join(os.path.dirname(__file__))
 sys.path.append(os.path.join(DIR, '..'))
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from UiLoader import getUiClass
-from iconObjects import xmlIcon, romIcon, apkIcon
+from Ui.UiLoader import getUiClass
+from Ui.iconObjects import xmlIcon, romIcon, apkIcon
 from Logic.translator import Translator, t
 from Logic.APKUtils import isFileOfType
 
@@ -22,6 +22,7 @@ class ProjectTreeItem(QtWidgets.QTreeWidgetItem):
         self.translator = translator
         self.setText(0, translator.name)
         self.setFlags(self.flags() | QtCore.Qt.ItemIsSelectable)
+        self.exists = []
 
         typ = self.translator.name.split('.')[-1]
         icon = xmlIcon() if typ == 'xml' else apkIcon() if typ == 'apk' else romIcon()
@@ -32,15 +33,10 @@ class ProjectTreeItem(QtWidgets.QTreeWidgetItem):
             self.translator.dataUpdated.connect(self.updateChildren)
 
     def updateChildren(self):
-        self.clearChildren()
-        children = self.translator.getChildren()
-        if children:
-            children = [ProjectTreeItem(i, True) for i in children]
-            self.addChildren(children)
-    
-    def clearChildren(self):
-        for idx in range(self.childCount()):
-            self.removeChild(self.child(idx))
+        # self.takeChildren()
+        children = [i for i in self.translator.getChildren() if not i in self.exists]
+        self.addChildren([ProjectTreeItem(i, True) for i in children])
+        self.exists += children
 
 class OpenEditors(QtWidgets.QTreeWidget):
     """
@@ -60,5 +56,7 @@ class OpenEditors(QtWidgets.QTreeWidget):
         del self.map[translator]
     
     def focus(self, translator, idx):
-        treeItem = ProjectTreeItem(translator)
+        if not translator in self.map:
+            return
+        treeItem = self.map[translator]
         self.setCurrentItem(treeItem, 0)

@@ -1,12 +1,10 @@
-from os import path
-import sys
-DIR = path.join(path.dirname(__file__))
-sys.path.append(path.join(DIR, '..'))
-
 from PyQt5 import QtCore, QtGui, QtWidgets
-from UiLoader import getUiClass
+from Ui.UiLoader import getUiClass
 
-UI_FILE = path.abspath(path.join(path.dirname(__file__), 'Message.ui'))
+from appctx import ApplicationContext
+
+# UI_FILE = path.abspath(path.join(path.dirname(__file__), 'Message.ui'))
+UI_FILE = ApplicationContext.get_resource('Message.ui')
 
 class Message(getUiClass(UI_FILE)):
 

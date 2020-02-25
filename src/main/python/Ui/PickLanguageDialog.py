@@ -4,10 +4,14 @@ DIR = path.join(path.dirname(__file__))
 sys.path.append(path.join(DIR, '..'))
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-from UiLoader import getUiClass
+from Ui.UiLoader import getUiClass
 from Logic.languages import langs
 
+from fbs_runtime.application_context.PyQt5 import ApplicationContext
+ApplicationContext = ApplicationContext()
+
 UI_FILE = path.abspath(path.join(path.dirname(__file__), 'PickLanguageDialog.ui'))
+UI_FILE = path.abspath(ApplicationContext.get_resource('PickLanguageDialog.ui'))
 
 # On exist options
 CREATE = 0

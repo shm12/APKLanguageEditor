@@ -1,14 +1,10 @@
-import sys
-from os import path
-
-DIR = path.join(path.dirname(__file__))
-sys.path.append(path.join(DIR, '..'))
-
 from PyQt5 import QtCore, QtGui, QtWidgets, uic
-from UiLoader import getUiClass
+from Ui.UiLoader import getUiClass
 from Logic.languages import langs
 
-UI_FILE = path.join(DIR, 'LangPicker.ui')
+from appctx import ApplicationContext
+
+UI_FILE = ApplicationContext.get_resource('LangPicker.ui')
 
 
 class LangPicker(getUiClass(UI_FILE)):
