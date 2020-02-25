@@ -1,4 +1,3 @@
-from os import path
 import os
 import threading
 
@@ -10,7 +9,7 @@ from Ui.Message import Message
 from appctx import ApplicationContext
 
 # TranslatingDialog = getUiClass(path.abspath(path.join(path.dirname(__file__), 'TranslatingDialog.ui')))
-TranslatingDialog = getUiClass(ApplicationContext.get_resource('TranslatingDialog.ui'))
+TranslatingDialog = getUiClass(ApplicationContext.get_resource(os.path.join('ui', 'TranslatingDialog.ui')))
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
 #                                                                                             #
 # Important!  pyqt5 versions 5.12.0 to 5.13.0 when using Python 3.7.x has a bag. Be carefull  #
@@ -20,8 +19,8 @@ TranslatingDialog = getUiClass(ApplicationContext.get_resource('TranslatingDialo
 
 # UI_FILE = path.abspath(path.join(path.dirname(__file__), 'TranslateView.ui'))
 # EXTENDEDEDIT_FILE = path.abspath(path.join(path.dirname(__file__), 'extendedEdit.ui'))
-UI_FILE = ApplicationContext.get_resource('TranslateView.ui')
-EXTENDEDEDIT_FILE =  ApplicationContext.get_resource('extendedEdit.ui')
+UI_FILE = ApplicationContext.get_resource(os.path.join('ui', 'TranslateView.ui'))
+EXTENDEDEDIT_FILE =  ApplicationContext.get_resource(os.path.join('ui','extendedEdit.ui'))
 
 class CustomTableWidget(QtWidgets.QTableWidget):
 

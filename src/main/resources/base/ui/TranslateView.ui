@@ -149,7 +149,7 @@
   <customwidget>
    <class>CustomTableWidget</class>
    <extends>QTableWidget</extends>
-   <header>TranslateView.h</header>
+   <header>Ui/TranslateView.h</header>
    <slots>
     <signal>rowClickedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
     <signal>rowChangedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
@@ -160,7 +160,7 @@
   <customwidget>
    <class>ExpendedEdit</class>
    <extends>QWidget</extends>
-   <header>TranslateView.h</header>
+   <header>Ui/TranslateView.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

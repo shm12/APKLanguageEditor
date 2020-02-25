@@ -1,10 +1,10 @@
+import os
 from PyQt5 import QtCore, QtGui, QtWidgets
 from Ui.UiLoader import getUiClass
-
 from appctx import ApplicationContext
 
 # UI_FILE = path.abspath(path.join(path.dirname(__file__), 'Message.ui'))
-UI_FILE = ApplicationContext.get_resource('Message.ui')
+UI_FILE = ApplicationContext.get_resource(os.path.join('ui', 'Message.ui'))
 
 class Message(getUiClass(UI_FILE)):
 

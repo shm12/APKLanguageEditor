@@ -6,9 +6,11 @@ from lxml import etree as ET
 
 DECOMPILED_SUFFIX = '-decompiled'
 APKTOOL = 'C:\\Users\\shmbi\\Documents\\Translate_Qin1SPlus\\resources\\apktool_2.4.1.jar'
+# APKTOOL = 'apktool_2.4.1.jar'
 APKSIGNER = 'C:\\Users\\shmbi\\Downloads\\apk-editor-studio_win32_1.3.1\\APK Editor Studio v1.3.1\\tools\\apksigner.jar'
 keystore = ''
 JAVA = '"C:\\Program Files (x86)\\Common Files\\Oracle\\Java\\javapath\\java"'
+# JAVA = 'java'
 
 
 def isFileOfType(path, typ):
@@ -45,7 +47,7 @@ def getXmlTranslatables(path):
     for typ in ('string-array', 'plurals'):
         for item in xml.findall(typ):
             l += item
-    return [i for i in l if isElementTranslatable(i)]
+    return [i for i in l if isElementTranslatable(i) and i.tag in ('item', 'string')]
 
 def getAPKTranslatableXmls(dpath):
     valuesPath = os.path.join(dpath, 'res', 'values')
@@ -71,49 +73,45 @@ def decompileAPK(path, outdir='', frameworks=[]):
     # Dest path
     newDirName = os.path.basename(path) + DECOMPILED_SUFFIX
     destPath = os.path.join(outdir, newDirName) if outdir else path + DECOMPILED_SUFFIX
-
-    # Temporary change framework resourceses apk name
-    # if framework:
-    #     fwPath = os.path.dirname(framework)
-    #     tmpFw = os.path.join(fwPath, '1.apk')
-    #     os.rename(framework, tmpFw)
-    
-    for frw in frameworks:
-        tag = ''.join(random.choice(string.ascii_lowercase) for i in range(7))
-        os.system(f'{JAVA} -jar {APKTOOL} if {frw}')
+    installFrameworks(frameworks)  
 
     # Run
     cmd = f'{JAVA} -jar {APKTOOL} d {path} -f -o {destPath}'
-    # cmd = f'{JAVA} -jar {APKTOOL} d {path} -f -o {destPath}{f" -p {fwPath}" if framework else ""}'
     ret = os.system(cmd)
-
-    # Restore previouse resourceses apk name
-    # if framework:
-    #     os.rename(tmpFw, framework)
-
     # return
     return ret, destPath
 
-def recompileAPK(path, outdir='', framework=''):
+def installFrameworks(frameworks):
+    for f in frameworks:
+        os.system(f'{JAVA} -jar {APKTOOL} if {f}')
+
+def recompileAPK(path, outdir='', frameworks=[]):
 
     # Dest path
     path = os.path.normpath(path)
     apkName = os.path.basename(path)[:-len(DECOMPILED_SUFFIX)]
     destPath = os.path.join(outdir, apkName) if outdir else apkName
-
-    # Temporary change framework resourceses apk name
-    if framework:
-        fwPath = os.path.dirname(framework)
-        tmpFw = os.path.join(fwPath, '1.apk')
-        os.rename(framework, tmpFw)
+    destPath = outdir
+    installFrameworks(frameworks)  
 
     # Run
-    cmd = f'{JAVA} -jar {APKTOOL} b {path} -o {destPath}{f" -p {fwPath}" if framework else ""}'
+    cmd = f'{JAVA} -jar {APKTOOL} b {path} -o {destPath}'
     ret = os.system(cmd)
-
-    # Restore previouse resourceses apk name
-    if framework:
-        os.rename(tmpFw, framework)
 
     # return
     return ret, destPath
+
+def getRecommendedXMLName(path, langCode):
+    xmlDir = os.path.dirname(path)
+    newXmlBaseName = '.'.join(os.path.basename(path).split('.')[:-1])
+    newXmlName = f'{newXmlBaseName}.{langCode}.xml'
+    i = 0
+    while(True):
+        newXmlName = newXmlName if not i else f'{newXmlBaseName}.{langCode}({i}).xml'
+        newXmlPath = os.path.join(xmlDir, newXmlName)
+        if os.path.exists(newXmlPath):
+            i += 1
+            continue
+        else:
+            break
+    return newXmlPath

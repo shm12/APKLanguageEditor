@@ -10,7 +10,7 @@ from Logic.APKUtils import isFileOfType
 
 from appctx import ApplicationContext
 
-UI_FILE = ApplicationContext.get_resource('MainWindow.ui')
+UI_FILE = ApplicationContext.get_resource(os.path.join('ui', 'MainWindow.ui'))
 
 class MainWindow(getUiClass(UI_FILE)):
     """

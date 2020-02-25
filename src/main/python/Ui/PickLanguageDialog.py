@@ -10,8 +10,7 @@ from Logic.languages import langs
 from fbs_runtime.application_context.PyQt5 import ApplicationContext
 ApplicationContext = ApplicationContext()
 
-UI_FILE = path.abspath(path.join(path.dirname(__file__), 'PickLanguageDialog.ui'))
-UI_FILE = path.abspath(ApplicationContext.get_resource('PickLanguageDialog.ui'))
+UI_FILE = ApplicationContext.get_resource(path.join('ui', 'PickLanguageDialog.ui'))
 
 # On exist options
 CREATE = 0
