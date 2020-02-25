@@ -1,6 +1,7 @@
 import os
 import random
 import string
+import subprocess
 from lxml import etree as ET
 
 
@@ -24,6 +25,7 @@ def isElementTranslatable(element):
     return 'translatable' not in element.attrib \
         or element.attrib['translatable'] == 'true'
 
+
 def getTranslatableXmls(path):
     l = []
 
@@ -36,6 +38,7 @@ def getTranslatableXmls(path):
                     l.append(filepath)
     
     return l
+
 
 def getXmlTranslatables(path):
     try:
@@ -68,38 +71,60 @@ def getAPKLang(dpath, lang):
     os.mkdir(langPath) if not os.path.exists(langPath) else None
     return valuesPath, langPath, map(os.path.basename, getTranslatableXmls(valuesPath))
 
-def decompileAPK(path, outdir='', frameworks=[]):
+
+def decompileAPK(path, outdir='', frameworks=None, force=False):
 
     # Dest path
     newDirName = os.path.basename(path) + DECOMPILED_SUFFIX
     destPath = os.path.join(outdir, newDirName) if outdir else path + DECOMPILED_SUFFIX
-    installFrameworks(frameworks)  
+
+    if os.path.exists(destPath) and not force:
+        return 0, '', destPath
+
+    install_frameworks(frameworks) if frameworks else None
 
     # Run
     cmd = f'{JAVA} -jar {APKTOOL} d {path} -f -o {destPath}'
-    ret = os.system(cmd)
+    ret, out = run_cmd(cmd)
+
     # return
-    return ret, destPath
+    return ret, out, destPath
 
-def installFrameworks(frameworks):
+
+def install_frameworks(frameworks):
+    finall = []
     for f in frameworks:
-        os.system(f'{JAVA} -jar {APKTOOL} if {f}')
+        finall.append(run_cmd(f'{JAVA} -jar {APKTOOL} if {f}'))
+    return finall
 
-def recompileAPK(path, outdir='', frameworks=[]):
+
+def recompileAPK(path, outdir='', frameworks=None):
 
     # Dest path
     path = os.path.normpath(path)
-    apkName = os.path.basename(path)[:-len(DECOMPILED_SUFFIX)]
-    destPath = os.path.join(outdir, apkName) if outdir else apkName
-    destPath = outdir
-    installFrameworks(frameworks)  
+    basename = os.path.basename(path)
+    apk_name = basename[:-len(DECOMPILED_SUFFIX)] if DECOMPILED_SUFFIX in basename else basename
+    apk_name = apk_name + '.apk' if apk_name.split('.')[-1] != 'apk' else apk_name
+    dest_path = os.path.join(outdir, apk_name) if outdir else os.path.join(os.path.dirname(path), apk_name)
+
+    install_frameworks(frameworks) if frameworks else None
 
     # Run
-    cmd = f'{JAVA} -jar {APKTOOL} b {path} -o {destPath}'
-    ret = os.system(cmd)
+    cmd = f'{JAVA} -jar {APKTOOL} b {path} -o {dest_path}'
+    ret, out = run_cmd(cmd)
 
     # return
-    return ret, destPath
+    return ret, out, dest_path
+
+def run_cmd(cmd):
+    print(cmd)
+    ret = 0
+    try:
+        out = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as e:
+        out = e.output
+        ret = e.returncode
+    return ret, out
 
 def getRecommendedXMLName(path, langCode):
     xmlDir = os.path.dirname(path)

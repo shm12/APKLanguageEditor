@@ -1,3 +1,8 @@
+# fbs freeze seems to work only with:
+#   python=3.7.5
+#   pyinstaller=3.4
+#   virtualenv (not the builtin venv)
+
 fbs
 PyQt5
 lxml
