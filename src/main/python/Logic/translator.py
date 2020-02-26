@@ -1,20 +1,31 @@
 import os
-from shutil import copyfile
-from lxml import etree as ET
 import translators as ts
 import fnmatch
-import subprocess
-from PyQt5 import QtCore
-from concurrent.futures import ThreadPoolExecutor
+from typing import Union
 
-from .main import cache
 from .languages import langs
 from .APKUtils import *
-from ..Ui.TranslateView import TranslateView
 
 frameworkDirNames = {'framework', 'system-framework', 'priv-app', 'app'}
 frameworkFileName = 'framework-res.apk'
 
+
+class DataKeys:
+    TRANSLATION = 'Translation'
+    ORIGIN = 'Origin'
+    KEEP = 'keep'
+    ELEMENT = 'element'
+
+# class CustomList(list):
+#     def __getitem__(self, item):
+#         return self.__getitem__(item)
+#
+#     def __setitem__(self, key, value):
+#         return self.__setitem__(key, value)
+#
+#     def __len__(self):
+#         return self.__len__()
+#
 
 class _BaseData(object):
     """
@@ -26,16 +37,36 @@ class _BaseData(object):
                  *args,
                  dest=None,
                  additional_langs=None,
+                 parent_el=None,
                  **kwargs,
                  ):
+        """
+
+        :param path: The path.
+        :param target_lang: Target language for translation.
+        :param *args: additional argument to pass on.
+        :param dest: Destination path.
+        :param additional_langs: additional languages to parse (except for the default).
+        :param parent_el: The parent translation element of the object (if exists)
+        :param kwargs: additional keyword args
+        """
         super(_BaseData, self).__init__(*args, **kwargs)
         assert os.path.exists(path), f'The path: {path} does not exists.'
         self.path = os.path.abspath(os.path.normpath(path))
         self.dest = dest
         self.target_lang = target_lang
         self.additional_langs = additional_langs
+        self._data = []
+
+        self.parent_el = None
+        self._set_parent(parent_el) if parent_el else None
 
         self.name = os.path.basename(path)
+
+    def _set_parent(self, parent):
+        self.parent_el.remove_child(self) if self.parent_el else None
+        self.parent_el = parent
+        self.parent_el.children.append(self)
 
     def add_language(self, lang):
         pass
@@ -65,14 +96,41 @@ class _BaseData(object):
             translated = translated.replace(f'% {i}', f' %{i}')
         return translated
 
+    def auto_translate_row(self, row: Union[dict, int]):
+        row = self.data[row] if type(row) is int else row
+        if row[DataKeys.ORIGIN]:
+            row[DataKeys.TRANSLATION] = self._auto_translate(row[DataKeys.ORIGIN])
+            row[DataKeys.KEEP] = False
+        else:
+            row[DataKeys.TRANSLATION] = None
+            row[DataKeys.KEEP] = False
+
+    def _data_changed(self):
+        self.parent_el._child_data_changed(self) if self.parent_el else None
+        
     @property
     def target_lang_code(self):
         return langs[self.target_lang]
 
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, data):
+        self._data = data
+        self._data_changed()
+
+    def iter_data(self):
+        for i in self._data:
+            yield i
+
+
 class _BaseTree(_BaseData):
     """
-    A basic tree of translation data.
+    A basic tree of translation data (may be an apk or a rom).
     """
+    CHILD_TYPE = _BaseData
 
     def __init__(self, *args, frameworks=None, **kwargs):
         self.children = []
@@ -82,8 +140,20 @@ class _BaseTree(_BaseData):
     def get_children(self):
         return self.children
 
-    def add_child(self, arg):
-        pass
+    def add_child(self, path, *args, **kwargs):
+        child = self.CHILD_TYPE(
+            path,
+            self.target_lang,
+            *args,
+            additional_langs=self.additional_langs,
+            parent_el=self,
+            **kwargs,
+        )
+        return child
+
+    def remove_child(self, child):
+        assert child in self.get_children(), 'Trying to remove child that not exists'
+        self.children.remove(child)
 
     def build(self):
         pass
@@ -92,10 +162,12 @@ class _BaseTree(_BaseData):
         for child in self.get_children():
             child.save()
 
-    @property
-    def data(self):
+    def _child_data_changed(self, *args, **kwargs):
+        self.data = list(self.iter_data())
+
+    def iter_data(self):
         for child in self.get_children():
-            for i in child.data:
+            for i in child.iter_data():
                 yield i
 
 class Xml(_BaseData):
@@ -129,7 +201,7 @@ class Xml(_BaseData):
                 entry['Translation'] = dstparent[idx] if dstparent is not None else None
             entry['element'] = element
             entry['Origin'] = element.text
-            entry['Translation'] = entry['Translation'].text if entry['Translation'] is not None else entry['Origin']
+            entry['Translation'] = entry['Translation'].text if entry['Translation'] is not None else None
             entry['keep'] = entry['Translation'] is None
             l.append(entry)
         self.data = l
@@ -171,10 +243,13 @@ class Xml(_BaseData):
         # Ropen (for xml elements reload)
         self._open()
 
+
 class Apk(_BaseTree):
     """
     Description for Apk.
     """
+    CHILD_TYPE = Xml
+
     def __init__(self, *args, **kwargs):
         super(Apk, self).__init__(*args, **kwargs)
 
@@ -204,17 +279,17 @@ class Apk(_BaseTree):
         for name in names:
             self.add_child(name)
 
-    def add_child(self, name):
-        if name in self.get_children():
+    def add_child(self, name, *args, **kwargs):
+        if name in [i.name for i in self.get_children()]:
             return
         origin_xml = os.path.join(self._values_dir, name)
         dest_xml = os.path.join(self._dest_lang_dir, name)
-        xml = Xml(
-            path=origin_xml,
+        return super(Apk, self).add_child(
+            origin_xml,
+            *args,
             dest=dest_xml,
-            target_lang=self.target_lang,
+            **kwargs
         )
-        self.children.append(xml)
 
     def build(self):
         print(self.path)
@@ -225,10 +300,12 @@ class Apk(_BaseTree):
     def is_decompiled_apk(path):
         return 'apktool.yml' in os.listdir(path)
 
+
 class Rom(_BaseTree):
     """
     Description for Rom.
     """
+    CHILD_TYPE = Apk
 
     def __init__(self, *args, **kwargs):
         super(Rom, self).__init__(*args, **kwargs)
@@ -242,18 +319,18 @@ class Rom(_BaseTree):
         for apk in apks:
             self.add_child(apk)
 
-    def add_child(self, path):
-        self.children.append(Apk(
-            path=path,
-            target_lang=self.target_lang,
-            dest=self.dest,
-            additional_langs=self.additional_langs,
+    def add_child(self, path, *args, **kwargs):
+        return super(Rom, self).add_child(
+            path,
+            *args,
             frameworks=self.frameworks,
-        ))
+            **kwargs
+        )
 
     def build(self):
         for apk in self.get_children():
             apk.build()
+
 
 def findFile(pattern, path):
     result = []
@@ -263,3 +340,4 @@ def findFile(pattern, path):
                 result.append(os.path.join(root, name))
     return result
 
+    
