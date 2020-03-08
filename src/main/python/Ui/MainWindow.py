@@ -4,9 +4,10 @@ import threading
 from PyQt5 import QtCore, QtGui, QtWidgets
 from Ui.UiLoader import getUiClass
 from Ui.trees import ProjectTreeItem
+from Ui.threads import Pool
 from Ui.tabs import Tabs
-from Logic.translator import Translator, t
 from Logic.APKUtils import isFileOfType
+from .translator import Apk, Xml, Rom
 
 from appctx import ApplicationContext
 
@@ -18,7 +19,7 @@ class MainWindow(getUiClass(UI_FILE)):
     """
     def __init__(self, *args, **kwargs):
         super(MainWindow, self).__init__(*args, **kwargs)
-        self.threadpool = t
+        # self.threadpool = t
     
     def setupUi(self):
         super(MainWindow, self).setupUi()
@@ -61,10 +62,18 @@ class MainWindow(getUiClass(UI_FILE)):
         self.open(xmlPath) if xmlPath else None
 
     def open(self, path):
-        treeItem = ProjectTreeItem(Translator(path=path), children=True)
+        if os.path.isfile(path):
+
+            if isFileOfType(path, 'xml'):
+                treeItem = ProjectTreeItem(Xml(path=path, threadpool=Pool(), target_lang='Hebrew'))
+            elif isFileOfType(path, 'apk'):
+                treeItem = ProjectTreeItem(Apk(path=path, threadpool=Pool(), target_lang='Hebrew'), children=True)
+        elif(Apk.is_decompiled_apk(path)):
+            treeItem = ProjectTreeItem(Apk(path=path, threadpool=Pool(), target_lang='Hebrew'), children=True)
+        else:
+            treeItem = ProjectTreeItem(Rom(path=path, threadpool=Pool(), target_lang='Hebrew'), children=True)
+        
         self.projectsTree.addTopLevelItem(treeItem)
-        if isFileOfType(path, 'xml'):
-            self.projectsTree.itemActivated.emit(treeItem, 0)
 
     # Events
     def startDrag(self):

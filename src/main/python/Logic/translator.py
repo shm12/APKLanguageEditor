@@ -27,6 +27,7 @@ class DataKeys:
 #         return self.__len__()
 #
 
+
 class _BaseData(object):
     """
     Description for _BaseData.
@@ -59,11 +60,15 @@ class _BaseData(object):
         self._data = []
 
         self.parent_el = None
+        self.name = os.path.basename(path)
         self._set_parent(parent_el) if parent_el else None
 
-        self.name = os.path.basename(path)
+
+        self._open()
 
     def _set_parent(self, parent):
+        if not isinstance(parent, _BaseTree):
+            raise TypeError(f'Trying to set parent of type {type(parent)}')
         self.parent_el.remove_child(self) if self.parent_el else None
         self.parent_el = parent
         self.parent_el.children.append(self)
@@ -96,14 +101,19 @@ class _BaseData(object):
             translated = translated.replace(f'% {i}', f' %{i}')
         return translated
 
-    def auto_translate_row(self, row: Union[dict, int]):
-        row = self.data[row] if type(row) is int else row
-        if row[DataKeys.ORIGIN]:
-            row[DataKeys.TRANSLATION] = self._auto_translate(row[DataKeys.ORIGIN])
-            row[DataKeys.KEEP] = False
+    def auto_translate_item(self, item: Union[dict, int]):
+        item = self.data[item] if type(item) is int else item
+        if item[DataKeys.ORIGIN]:
+            item[DataKeys.TRANSLATION] = self._auto_translate(item[DataKeys.ORIGIN])
+            item[DataKeys.KEEP] = False
         else:
-            row[DataKeys.TRANSLATION] = None
-            row[DataKeys.KEEP] = False
+            item[DataKeys.TRANSLATION] = None
+            item[DataKeys.KEEP] = False
+
+    def keep_item(self, item: Union[dict, int]):
+        item = self.data[item] if type(item) is int else item
+        item[DataKeys.KEEP] = True
+        item[DataKeys.TRANSLATION] = None
 
     def _data_changed(self):
         self.parent_el._child_data_changed(self) if self.parent_el else None
@@ -142,9 +152,9 @@ class _BaseTree(_BaseData):
 
     def add_child(self, path, *args, **kwargs):
         child = self.CHILD_TYPE(
-            path,
-            self.target_lang,
             *args,
+            path=path,
+            target_lang=self.target_lang,
             additional_langs=self.additional_langs,
             parent_el=self,
             **kwargs,
@@ -170,14 +180,11 @@ class _BaseTree(_BaseData):
             for i in child.iter_data():
                 yield i
 
+
 class Xml(_BaseData):
     """
     Description for Xml.
     """
-
-    def __init__(self, *args, **kwargs):
-        super(Xml, self).__init__(*args, **kwargs)
-        self._open()
 
     def _open(self):
         dst_xml = ET.parse(self.dest) if (self.dest and os.path.exists(self.dest)) else None
@@ -217,7 +224,7 @@ class Xml(_BaseData):
         # Start loop...
         for i in self.data:
             el = i['element']
-            if i['keep']:
+            if i['keep'] or i['Translation'] is None:
                 parent = el.getparent()
                 if el.tag == 'item':
                     # This is a plural or a string-array. We save them for later care.
@@ -252,12 +259,7 @@ class Apk(_BaseTree):
 
     def __init__(self, *args, **kwargs):
         super(Apk, self).__init__(*args, **kwargs)
-
-        self._values_dir = str()
-        self._dest_lang_dir = str()
-        self._xml_names = []
-
-        self._open()
+        self.name = self.name[:-len(DECOMPILED_SUFFIX)] if self.name[-len(DECOMPILED_SUFFIX):] == DECOMPILED_SUFFIX else self.name
 
     def _open(self):
         if not os.path.isdir(self.path):
@@ -277,7 +279,7 @@ class Apk(_BaseTree):
 
     def add_children(self, names):
         for name in names:
-            self.add_child(name)
+            self.add_child(name=name)
 
     def add_child(self, name, *args, **kwargs):
         if name in [i.name for i in self.get_children()]:
@@ -285,8 +287,8 @@ class Apk(_BaseTree):
         origin_xml = os.path.join(self._values_dir, name)
         dest_xml = os.path.join(self._dest_lang_dir, name)
         return super(Apk, self).add_child(
-            origin_xml,
             *args,
+            path=origin_xml,
             dest=dest_xml,
             **kwargs
         )
@@ -310,19 +312,20 @@ class Rom(_BaseTree):
     def __init__(self, *args, **kwargs):
         super(Rom, self).__init__(*args, **kwargs)
         assert os.path.isdir(self.path), 'Rom path must be a directory (got a file).'
-        self._open()
 
     def _open(self):
         frameworks = findFile(frameworkFileName, self.path)
         self.frameworks += frameworks
-        apks = findFile('*.apk', self.path) + findFile(f'*.apk{DECOMPILED_SUFFIX}', self.path)
+        apks = findFile('*.apk', self.path)
+        decompiled = findFile(f'*.apk{DECOMPILED_SUFFIX}', self.path)
+        apks = apks + [apk for apk in decompiled if apk[:-len(DECOMPILED_SUFFIX)] not in apks]
         for apk in apks:
             self.add_child(apk)
 
     def add_child(self, path, *args, **kwargs):
         return super(Rom, self).add_child(
-            path,
             *args,
+            path=path,
             frameworks=self.frameworks,
             **kwargs
         )
@@ -335,9 +338,8 @@ class Rom(_BaseTree):
 def findFile(pattern, path):
     result = []
     for root, dirs, files in os.walk(path):
-        for name in files:
+        for name in files + dirs:
             if fnmatch.fnmatch(name, pattern):
                 result.append(os.path.join(root, name))
     return result
 
-    

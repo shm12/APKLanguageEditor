@@ -175,7 +175,8 @@ class CustomTableWidget(QtWidgets.QTableWidget):
 
     def updateRow(self, row):
         item = self.item(row, self.headers.index('Translation'))
-        item.setText(self.data[row]['Translation'])
+        if item:
+            item.setText(self.data[row]['Translation'])
 
     # Slots
     @QtCore.pyqtSlot(QtWidgets.QTableWidgetItem)

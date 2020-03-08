@@ -2,6 +2,7 @@ from PyQt5 import QtCore
 
 
 class Pool(QtCore.QObject):
+    tasksFinished = QtCore.pyqtSignal()
     def __init__(self, *args, limit=1, **kwargs):
         super(Pool, self).__init__(*args, **kwargs)
         self._pool = []
@@ -24,6 +25,7 @@ class Pool(QtCore.QObject):
     def _try_execute(self):
         while self.limit > len(self._running):
             if self._stop or not len(self._pool):
+                self.tasksFinished.emit()
                 break
             thread = self._pool[0]
             del self._pool[0]
@@ -37,6 +39,7 @@ class Pool(QtCore.QObject):
 
 
 class Worker(QtCore.QThread):
+    exceptionRaised = QtCore.pyqtSignal('PyQt_PyObject', arguments=['Exception'])
 
     def __init__(self, target, *sargs, args=None, kwargs=None, **skwargs):
         super(Worker, self).__init__(*sargs, **skwargs)
@@ -45,5 +48,9 @@ class Worker(QtCore.QThread):
         self.kwarsg = kwargs if kwargs else {}
 
     def run(self):
-        self.target(*self.args, **self.kwarsg)
+        try:
+            self.target(*self.args, **self.kwarsg)
+        except Exception as e:
+            print(e)
+            self.exceptionRaised.emit(e)
 

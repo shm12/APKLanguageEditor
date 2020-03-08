@@ -8,7 +8,7 @@ sys.path.append(os.path.join(DIR, '..'))
 from PyQt5 import QtCore, QtGui, QtWidgets
 from Ui.UiLoader import getUiClass
 from Ui.iconObjects import xmlIcon, romIcon, apkIcon
-from Logic.translator import Translator, t
+
 from Logic.APKUtils import isFileOfType
 
       
@@ -28,13 +28,17 @@ class ProjectTreeItem(QtWidgets.QTreeWidgetItem):
         icon = xmlIcon() if typ == 'xml' else apkIcon() if typ == 'apk' else romIcon()
 
         self.setIcon(0, icon)
-        if children:
-            self.updateChildren()
-            self.translator.dataUpdated.connect(self.updateChildren)
+
+        try:
+            if children:
+                self.updateChildren()
+                self.translator.childAdded.connect(self.updateChildren)
+        except:
+            pass
 
     def updateChildren(self):
         # self.takeChildren()
-        children = [i for i in self.translator.getChildren() if not i in self.exists]
+        children = [i for i in self.translator.get_children() if not i in self.exists]
         self.addChildren([ProjectTreeItem(i, True) for i in children])
         self.exists += children
 
@@ -49,7 +53,7 @@ class OpenEditors(QtWidgets.QTreeWidget):
     def addTranslator(self, translator, idx):
         treeItem = ProjectTreeItem(translator)
         self.addTopLevelItem(treeItem)
-        self.map[translator] = treeItem
+        self.map[translator.ui] = treeItem
     
     def removeTranslator(self, translator, idx):
         self.takeTopLevelItem(self.indexOfTopLevelItem(self.map[translator]))

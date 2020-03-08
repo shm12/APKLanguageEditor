@@ -7,7 +7,6 @@ sys.path.append(os.path.join(DIR, '..'))
 
 from PyQt5 import QtCore, QtGui, QtWidgets
 from Ui.UiLoader import getUiClass
-from Logic.translator import Translator, t
 from Logic.APKUtils import isFileOfType
 from Ui.iconObjects import xmlIcon, romIcon, apkIcon
 
@@ -30,12 +29,11 @@ class Tabs(QtWidgets.QTabWidget):
     # Slots
     def addTranslator(self, treeItem, *args, **kwargs):
         translator = treeItem.translator
-        if self.indexOf(translator) == -1:
-            translator.setupUi()
+        if self.indexOf(translator.ui) == -1:
             self.focused.connect(translator.focused)
-            self.addTab(translator, treeItem.icon(0), translator.name)
-            self.translatorAdded.emit(translator, self.indexOf(translator))
-        self.setCurrentWidget(translator)
+            self.addTab(translator.ui, treeItem.icon(0), translator.name)
+            self.translatorAdded.emit(translator, self.indexOf(translator.ui))
+        self.setCurrentWidget(translator.ui)
     
     @QtCore.pyqtSlot(int)
     def closeTab(self, idx):
@@ -47,7 +45,7 @@ class Tabs(QtWidgets.QTabWidget):
     # @QtCore.pyqtSlot('PyQt_PyObject')
     def focus(self, treeItem, *args, **kwargs):
         translator = treeItem.translator
-        self.setCurrentWidget(translator)
+        self.setCurrentWidget(translator.ui)
     
     def _focused(self, idx):
         self.focused.emit(self.widget(idx), idx)
