@@ -1,6 +1,6 @@
 import os
 
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 from .UiLoader import getUiClass
 from .PickLanguageDialog import PickLanguageDialog
 from .Message import Message
@@ -124,6 +124,7 @@ class ExpendedEdit(getUiClass(EXTENDEDEDIT_FILE)):
     translationChanged = QtCore.pyqtSignal()
     autoTranslateClicked = QtCore.pyqtSignal()
     keepOriginClicked = QtCore.pyqtSignal()
+    makeUntraslatableClicked = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
         super(ExpendedEdit, self).__init__(*args, **kwargs)
@@ -134,6 +135,7 @@ class ExpendedEdit(getUiClass(EXTENDEDEDIT_FILE)):
         self.setEnabled(False)
         self.autoTranslateClicked = self.autoTranslateButton.clicked
         self.keepOriginClicked = self.keepOriginButton.clicked
+        self.makeUntraslatableClicked = self.makeUntraslatableButton.clicked
         self.translationChanged = self.translationTextEdit.textChanged
         self.translationTextEdit.textChanged.connect(self._updateData)
 
@@ -192,6 +194,7 @@ class TranslateView(getUiClass(UI_FILE)):
     """
     translateRequested = QtCore.pyqtSignal(list, arguments=['Items'])
     keepRequested = QtCore.pyqtSignal(list, arguments=['Items'])
+    makeUntraslatableRequested = QtCore.pyqtSignal(list, arguments=['Items'])
     saveRequested = QtCore.pyqtSignal()
     buildRequested = QtCore.pyqtSignal()
 
@@ -202,17 +205,37 @@ class TranslateView(getUiClass(UI_FILE)):
 
     def setupUi(self):
         super(TranslateView, self).setupUi()
-        
+        self.translationTable.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.translationTable.customContextMenuRequested.connect(self.showMenu)
         # Expended edit signals
         self.expendedEdit.translationChanged.connect(self.updateActiveRow)
         self.expendedEdit.autoTranslateClicked.connect(self._translateActive)
         self.expendedEdit.keepOriginClicked.connect(self._keepActive)
+        self.expendedEdit.makeUntraslatableClicked.connect(self._makeUntraslatableActive)
 
         # Translation Table signals
         self.translationTable.setModel(self.model)
         self.translationTable.selectionModel().currentChanged.connect(self.setActiveRow)
         self.model.dataChanged.connect(self._rowChangedSlot)
         self.autoTranslateAllButton.clicked.connect(self._translateAll)
+
+    def showMenu(self, pos):
+        print('showing menu')
+        m = QtWidgets.QMenu()
+
+        translate = QtWidgets.QAction('Auto Translate')
+        keep = QtWidgets.QAction('Keep Origin')
+        make_untrans = QtWidgets.QAction('Make Untrasltable')
+
+        translate.triggered.connect(self._translateSelection)
+        keep.triggered.connect(self._keepSelection)
+        make_untrans.triggered.connect(self._makeUntraslatableSelection)
+
+        m.addAction(translate)
+        m.addAction(keep)
+        m.addAction(make_untrans)
+
+        m.exec(QtGui.QCursor().pos())
 
     # Inner things
     def _rowChangedSlot(self, start, end):
@@ -234,8 +257,12 @@ class TranslateView(getUiClass(UI_FILE)):
 
     # exported things
     def _translateAll(self):
-        print(self.receivers(self.translateRequested))
         self.translateRequested.emit(list(range(len(self.model.internal_data))))
+
+    def _translateSelection(self):
+        rows = self.translationTable.selectionModel().selectedRows()
+        self.translateRequested.emit([i.row() for i in rows])
+        # self.tran
 
     def _translateActive(self):
         if self.activeRow is None:
@@ -245,10 +272,25 @@ class TranslateView(getUiClass(UI_FILE)):
     def _keepAll(self):
         self.keepRequested.emit(list(range(len(self.model.internal_data))))
 
+    def _keepSelection(self):
+        rows = self.translationTable.selectionModel().selectedRows()
+        self.keepRequested.emit([i.row() for i in rows])
+
     def _keepActive(self):
         if self.activeRow is None:
             return
         self.keepRequested.emit([self.activeRow])
+
+    def _makeUntraslatableAll(self):
+        self.makeUntraslatableRequested.emit(list(range(len(self.model.internal_data))))
+
+    def _makeUntraslatableSelection(self):
+        pass
+
+    def _makeUntraslatableActive(self):
+        if self.activeRow is None:
+            return
+        self.makeUntraslatableRequested.emit([self.activeRow])
 
     def updateRow(self, row_data, row):
         self.model.refreshRow(row)
@@ -258,3 +300,4 @@ class TranslateView(getUiClass(UI_FILE)):
 
     def build(self):
         self.buildRequested.emit()
+

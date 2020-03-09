@@ -115,6 +115,9 @@ class _BaseData(object):
         item[DataKeys.KEEP] = True
         item[DataKeys.TRANSLATION] = None
 
+    def set_item_untraslatable(self, item: Union[dict, int]):
+        pass
+
     def _data_changed(self):
         self.parent_el._child_data_changed(self) if self.parent_el else None
         
@@ -165,6 +168,13 @@ class _BaseTree(_BaseData):
         assert child in self.get_children(), 'Trying to remove child that not exists'
         self.children.remove(child)
 
+    def set_item_untraslatable(self, item: Union[dict, int]):
+        item = self.data[item] if type(item) is int else item
+        for child in self.get_children():
+            if item in child.data:
+                child.set_item_untraslatable(item)
+                break
+
     def build(self):
         pass
 
@@ -212,6 +222,13 @@ class Xml(_BaseData):
             entry['keep'] = entry['Translation'] is None
             l.append(entry)
         self.data = l
+
+    def set_item_untraslatable(self, item: Union[dict, int]):
+        element = item['element']
+        element.attrib['translatable'] = 'false'
+        xml = element.getroottree()
+        xml.write(self.path, xml_declaration=True, encoding="UTF-8")
+        self._open()
 
     def save(self):
         if not self.data:
