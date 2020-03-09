@@ -28,10 +28,11 @@ UI_FILE = ApplicationContext.get_resource(os.path.join('ui', 'TranslateView.ui')
 EXTENDEDEDIT_FILE = ApplicationContext.get_resource(os.path.join('ui','extendedEdit.ui'))
 pool = Pool()
 
+
 class TableModel(QtCore.QAbstractTableModel):
-    
+
     def __init__(self, *args, **kwargs):
-        super(QtCore.QAbstractTableModel, self).__init__(*args, **kwargs)
+        super(TableModel, self).__init__(*args, **kwargs)
         self._data = []
         self._headers = []
 
@@ -45,7 +46,7 @@ class TableModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.DisplayRole:
             if Qt_Orientation == QtCore.Qt.Horizontal:
                 return self.internal_headers[column]
-        return super(QtCore.QAbstractTableModel, self).headerData(column, Qt_Orientation, role)
+        return super(TableModel, self).headerData(column, Qt_Orientation, role)
 
     def data(self, QModelIndex, role=None):
         row = QModelIndex.row()
@@ -66,7 +67,7 @@ class TableModel(QtCore.QAbstractTableModel):
 
             return True
         return False
-    
+
     def refreshRow(self, row):
         self.dataChanged.emit(self.createIndex(row, 0), self.createIndex(row, len(self.internal_headers)))
 
@@ -75,8 +76,8 @@ class TableModel(QtCore.QAbstractTableModel):
 
         flags = QtCore.Qt
         ret = (
-            flags.ItemIsEnabled |
-            flags.ItemIsSelectable
+                flags.ItemIsEnabled |
+                flags.ItemIsSelectable
         )
 
         if self.internal_headers[column] == 'Translation':
@@ -148,13 +149,11 @@ class ExpendedEdit(getUiClass(EXTENDEDEDIT_FILE)):
     # Slots
     @QtCore.pyqtSlot('PyQt_PyObject')
     def setData(self, data):
-        # print(self.enabled())
         self.setEnabled(True)
         self.data = data
         self.originTextEdit.setText(data['Origin'])
         self.translationTextEdit.setText(data['Translation'])
         self.setTitle(data['Name'])
-
 
     @QtCore.pyqtSlot()
     def refreshTranslation(self, *args, **kwargs):
@@ -205,8 +204,20 @@ class TranslateView(getUiClass(UI_FILE)):
 
     def setupUi(self):
         super(TranslateView, self).setupUi()
+
+        # Context menu
         self.translationTable.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.translationTable.customContextMenuRequested.connect(self.showMenu)
+        self.ctx_menu = TableContextMenu()
+        self.ctx_menu.translate.triggered.connect(self._translateSelection)
+        self.ctx_menu.keep.triggered.connect(self._keepSelection)
+        self.ctx_menu.make_untrans.triggered.connect(self._makeUntraslatableSelection)
+        self.ctx_menu.copy.triggered.connect(self.copy_selection)
+        self.ctx_menu.copy_name.triggered.connect(self.copy_selection_name)
+        self.ctx_menu.copy_origin.triggered.connect(self.copy_selection_origin)
+        self.ctx_menu.copy_translation.triggered.connect(self.copy_selection_translation)
+        self.ctx_menu.paste.triggered.connect(self.paste)
+
         # Expended edit signals
         self.expendedEdit.translationChanged.connect(self.updateActiveRow)
         self.expendedEdit.autoTranslateClicked.connect(self._translateActive)
@@ -220,28 +231,14 @@ class TranslateView(getUiClass(UI_FILE)):
         self.autoTranslateAllButton.clicked.connect(self._translateAll)
 
     def showMenu(self, pos):
-        print('showing menu')
-        m = QtWidgets.QMenu()
-
-        translate = QtWidgets.QAction('Auto Translate')
-        keep = QtWidgets.QAction('Keep Origin')
-        make_untrans = QtWidgets.QAction('Make Untrasltable')
-
-        translate.triggered.connect(self._translateSelection)
-        keep.triggered.connect(self._keepSelection)
-        make_untrans.triggered.connect(self._makeUntraslatableSelection)
-
-        m.addAction(translate)
-        m.addAction(keep)
-        m.addAction(make_untrans)
-
-        m.exec(QtGui.QCursor().pos())
+        self.ctx_menu.paste.setEnabled(bool(ApplicationContext.app.clipboard().text()))
+        self.ctx_menu.exec(QtGui.QCursor().pos())
 
     # Inner things
     def _rowChangedSlot(self, start, end):
         if self.activeRow is not None and start.row() <= self.activeRow <= end.row():
             self.expendedEdit.refreshTranslation()
- 
+
     def setActiveRow(self, new, prev):
         row = new.row()
         self.activeRow = row
@@ -292,6 +289,54 @@ class TranslateView(getUiClass(UI_FILE)):
             return
         self.makeUntraslatableRequested.emit([self.activeRow])
 
+    # Copy operations
+    def copy_selection(self):
+        ret = ''
+        rows = self.translationTable.selectionModel().selectedRows()
+        for row in rows:
+            row = row.row()
+            ret += f"Name: {self.model.internal_data[row]['Name']}\n"
+            ret += f"Origin: {self.model.internal_data[row]['Origin']}\n"
+            ret += f"Translation: {self.model.internal_data[row]['Translation']}\n"
+            ret += '\n'
+        ApplicationContext.app.clipboard().setText(ret)
+
+    def copy_selection_name(self):
+        ret = ''
+        rows = self.translationTable.selectionModel().selectedRows()
+        for row in rows:
+            ret = ret + '\n' if ret else ''
+            row = row.row()
+            ret += f"{self.model.internal_data[row]['Name']}"
+        ApplicationContext.app.clipboard().setText(ret)
+
+    def copy_selection_origin(self):
+        ret = ''
+        rows = self.translationTable.selectionModel().selectedRows()
+        for row in rows:
+            ret = ret + '\n' if ret else ''
+            row = row.row()
+            ret += f"{self.model.internal_data[row]['Origin']}"
+        ApplicationContext.app.clipboard().setText(ret)
+
+    def copy_selection_translation(self):
+        ret = ''
+        rows = self.translationTable.selectionModel().selectedRows()
+        for row in rows:
+            ret = ret + '\n' if ret else ''
+            row = row.row()
+            ret += f"{self.model.internal_data[row]['Translation']}"
+        ApplicationContext.app.clipboard().setText(ret)
+
+    # Paste
+    def paste(self):
+        text = ApplicationContext.app.clipboard().text()
+        column = self.model.internal_headers.index('Translation')
+        rows = self.translationTable.selectionModel().selectedRows()
+        for row in rows:
+            row = row.row()
+            self.model.setData(self.model.createIndex(row, column), text, QtCore.Qt.EditRole)
+
     def updateRow(self, row_data, row):
         self.model.refreshRow(row)
 
@@ -301,3 +346,30 @@ class TranslateView(getUiClass(UI_FILE)):
     def build(self):
         self.buildRequested.emit()
 
+
+class TableContextMenu(QtWidgets.QMenu):
+    def __init__(self, *args, **kwargs):
+        super(TableContextMenu, self).__init__(*args, **kwargs)
+        self.translate = QtWidgets.QAction('Auto Translate')
+        self.keep = QtWidgets.QAction('Keep Origin')
+        self.make_untrans = QtWidgets.QAction('Make Untrasltable')
+
+        self.copy = QtWidgets.QAction('Copy')
+        self.copy_name = QtWidgets.QAction('Copy Name')
+        self.copy_origin = QtWidgets.QAction('Copy Origin')
+        self.copy_translation = QtWidgets.QAction('Copy Translation')
+        self.paste = QtWidgets.QAction('Paste')
+
+        self.addActions((
+                self.translate,
+                self.keep,
+                self.make_untrans,
+        ))
+        self.addSeparator()
+        self.addActions((
+                self.copy,
+                self.copy_name,
+                self.copy_origin,
+                self.copy_translation,
+                self.paste,
+        ))
