@@ -28,9 +28,8 @@ UI_FILE = ApplicationContext.get_resource(os.path.join('ui', 'TranslateView.ui')
 EXTENDEDEDIT_FILE = ApplicationContext.get_resource(os.path.join('ui','extendedEdit.ui'))
 pool = Pool()
 
-
 class TableModel(QtCore.QAbstractTableModel):
-
+    
     def __init__(self, *args, **kwargs):
         super(QtCore.QAbstractTableModel, self).__init__(*args, **kwargs)
         self._data = []
@@ -67,6 +66,9 @@ class TableModel(QtCore.QAbstractTableModel):
 
             return True
         return False
+    
+    def refreshRow(self, row):
+        self.dataChanged.emit(self.createIndex(row, 0), self.createIndex(row, len(self.internal_headers)))
 
     def flags(self, QModelIndex):
         column = QModelIndex.column()
@@ -101,97 +103,6 @@ class TableModel(QtCore.QAbstractTableModel):
         self.beginResetModel()
         self._headers = headers
         self.endResetModel()
-
-class CustomTableWidget(QtWidgets.QTableWidget):
-
-    # Signals
-    currentRowChanged = QtCore.pyqtSignal(int,  arguments=['Row'])
-    rowChangedSignal = QtCore.pyqtSignal(int,  arguments=['Row'])
-    _addRowSignal = QtCore.pyqtSignal(int, list,  arguments=['Row', 'Items'])
-    _removeRowSignal = QtCore.pyqtSignal(int, arguments=['Row'])
-
-    def __init__(self, *args, **kwargs):
-        super(CustomTableWidget, self).__init__(*args, **kwargs)
-        self.headers = []
-        self.data = []
-        self._addRowSignal.connect(self._addRowSlot)
-        self._removeRowSignal.connect(self._removeRowSlot)
-        self.itemChanged.connect(self._rowChangedSlot)
-        self.currentItemChanged.connect(self._currentChanged)
-
-    def refresh(self):
-        transColumn = self.headers.index('Translation')
-        for i in range(len(self.data)):
-            self.item(i, transColumn).setText(self.data[i]['Translation'])
-
-    def _threadedSetData(self, data):
-        old_data = self.data
-        new_data = data
-        self.data = data
-
-        # To remove
-        for i in old_data:
-            if i in new_data:
-                continue
-            self._removeRowSignal.emit(old_data.index(i))
-
-        # To add
-        columns = range(len(self.headers))
-        for i in new_data:
-            if i in old_data:
-                continue
-            row = new_data.index(i)
-            items = []
-            for column in columns:
-                header = self.headers[column]
-                newCell = QtWidgets.QTableWidgetItem(data[row][header])
-                newCell.setFlags(newCell.flags() ^ QtCore.Qt.ItemIsEditable) if header != 'Translation' else None
-                items.append(newCell)
-            self._addRowSignal.emit(row, items)
-
-    def _addRowSlot(self, row, items):
-        self.insertRow(row)
-        for i in range(len(items)):
-            self.setItem(row, i, items[i])
-
-    def _removeRowSlot(self, row):
-        self.removeRow(row)
-
-    def setData(self, headers, data):
-        if headers != self.headers:
-            # Set headers
-            columns = len(headers)
-            self.setColumnCount(columns)
-            for i in range(columns):
-                h = QtWidgets.QTableWidgetItem()
-                h.setText(headers[i])
-                self.setHorizontalHeaderItem(i, h)
-            self.headers = headers
-            self.data = []
-            self.clearContents()
-
-        thread = Wrkr(target=self._threadedSetData, args=[data])
-        pool.start(thread)
-
-    def updateRow(self, row):
-        item = self.item(row, self.headers.index('Translation'))
-        if item:
-            item.setText(self.data[row]['Translation'])
-
-    # Slots
-    @QtCore.pyqtSlot(QtWidgets.QTableWidgetItem)
-    def _currentChanged(self, current, *args, **kwargs):
-        self.currentRowChanged.emit(self.currentRow())
-
-    @QtCore.pyqtSlot(QtWidgets.QTableWidgetItem)
-    def _rowChangedSlot(self, QTableWidgetItem):
-        row = QTableWidgetItem.row()
-        translationItem = self.item(row, self.headers.index('Translation'))
-        if not translationItem:
-            return
-        self.data[row]['Translation'] = translationItem.text()
-        self.data[row]['keep'] = True if self.data[row]['Translation'] == self.data[row]['Origin'] else False
-        self.rowChangedSignal.emit(row)
 
 
 class ExpendedEdit(getUiClass(EXTENDEDEDIT_FILE)):
@@ -285,6 +196,7 @@ class TranslateView(getUiClass(UI_FILE)):
     buildRequested = QtCore.pyqtSignal()
 
     def __init__(self, *args, **kwargs):
+        self.model = TableModel()
         super(TranslateView, self).__init__(*args, **kwargs)
         self.activeRow = None
 
@@ -297,31 +209,33 @@ class TranslateView(getUiClass(UI_FILE)):
         self.expendedEdit.keepOriginClicked.connect(self._keepActive)
 
         # Translation Table signals
-        self.translationTable.rowChangedSignal.connect(self._rowChangedSlot)
-        self.translationTable.currentRowChanged.connect(self.setActiveRow)
+        self.translationTable.setModel(self.model)
+        self.translationTable.selectionModel().currentChanged.connect(self.setActiveRow)
+        self.model.dataChanged.connect(self._rowChangedSlot)
         self.autoTranslateAllButton.clicked.connect(self._translateAll)
 
     # Inner things
-    def _rowChangedSlot(self, row):
-        if self.activeRow is not None and row == self.activeRow:
+    def _rowChangedSlot(self, start, end):
+        if self.activeRow is not None and start.row() <= self.activeRow <= end.row():
             self.expendedEdit.refreshTranslation()
  
-    def setActiveRow(self, row):
-        print('setting active row', row)
+    def setActiveRow(self, new, prev):
+        row = new.row()
         self.activeRow = row
-        self.expendedEdit.setData(self._data[row])
+        self.expendedEdit.setData(self.model.internal_data[row])
 
     def updateActiveRow(self):
         if self.activeRow is not None:
-            self.translationTable.updateRow(self.activeRow)
+            self.model.refreshRow(self.activeRow)
 
     def setData(self, data):
-        self._data = data
-        self.translationTable.setData(['Name', 'Origin', 'Translation'], data)
+        self.model.internal_data = data
+        self.model.internal_headers = ['Name', 'Origin', 'Translation']
 
     # exported things
     def _translateAll(self):
-        self.translateRequested.emit(list(range(len(self._data))))
+        print(self.receivers(self.translateRequested))
+        self.translateRequested.emit(list(range(len(self.model.internal_data))))
 
     def _translateActive(self):
         if self.activeRow is None:
@@ -329,7 +243,7 @@ class TranslateView(getUiClass(UI_FILE)):
         self.translateRequested.emit([self.activeRow])
 
     def _keepAll(self):
-        self.keepRequested.emit(list(range(len(self._data))))
+        self.keepRequested.emit(list(range(len(self.model.internal_data))))
 
     def _keepActive(self):
         if self.activeRow is None:
@@ -337,8 +251,7 @@ class TranslateView(getUiClass(UI_FILE)):
         self.keepRequested.emit([self.activeRow])
 
     def updateRow(self, row_data, row):
-        print('updating row')
-        self.translationTable.updateRow(row)
+        self.model.refreshRow(row)
 
     def save(self):
         self.saveRequested.emit()

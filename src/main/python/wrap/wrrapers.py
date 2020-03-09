@@ -2,6 +2,7 @@ from typing import Union
 from PyQt5 import QtCore, QtGui, QtWidgets
 from Logic import translator
 from Ui.threads import Worker, Pool
+from appctx import ApplicationContext
 
 class _BaseWrapper(QtCore.QObject, translator._BaseData):
     """
@@ -22,6 +23,7 @@ class _BaseWrapper(QtCore.QObject, translator._BaseData):
     def __init__(self, threadpool: Pool, *args, **kwargs):
         self.threadpool = threadpool
         super(_BaseWrapper, self).__init__(*args, **kwargs)
+        self.moveToThread(ApplicationContext.app.instance().thread())
         self.parent_el.childAdded.emit(self, self.parent_el.get_children().index(self)) if self.parent_el else None
 
     def _data_changed(self):

@@ -15,86 +15,13 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <widget class="CustomTableWidget" name="translationTable">
-     <property name="sizeAdjustPolicy">
-      <enum>QAbstractScrollArea::AdjustIgnored</enum>
-     </property>
-     <property name="selectionMode">
-      <enum>QAbstractItemView::ExtendedSelection</enum>
-     </property>
+    <widget class="QTableView" name="translationTable">
      <property name="selectionBehavior">
       <enum>QAbstractItemView::SelectRows</enum>
      </property>
-     <property name="showGrid">
-      <bool>true</bool>
-     </property>
-     <property name="sortingEnabled">
-      <bool>false</bool>
-     </property>
-     <property name="wordWrap">
-      <bool>true</bool>
-     </property>
-     <property name="cornerButtonEnabled">
-      <bool>true</bool>
-     </property>
-     <property name="columnCount">
-      <number>2</number>
-     </property>
-     <attribute name="horizontalHeaderVisible">
-      <bool>true</bool>
-     </attribute>
-     <attribute name="horizontalHeaderCascadingSectionResizes">
-      <bool>true</bool>
-     </attribute>
-     <attribute name="horizontalHeaderMinimumSectionSize">
-      <number>63</number>
-     </attribute>
-     <attribute name="horizontalHeaderHighlightSections">
-      <bool>true</bool>
-     </attribute>
-     <attribute name="horizontalHeaderShowSortIndicator" stdset="0">
-      <bool>false</bool>
-     </attribute>
      <attribute name="horizontalHeaderStretchLastSection">
       <bool>true</bool>
      </attribute>
-     <attribute name="verticalHeaderVisible">
-      <bool>true</bool>
-     </attribute>
-     <attribute name="verticalHeaderCascadingSectionResizes">
-      <bool>true</bool>
-     </attribute>
-     <attribute name="verticalHeaderHighlightSections">
-      <bool>false</bool>
-     </attribute>
-     <attribute name="verticalHeaderShowSortIndicator" stdset="0">
-      <bool>false</bool>
-     </attribute>
-     <attribute name="verticalHeaderStretchLastSection">
-      <bool>false</bool>
-     </attribute>
-     <column>
-      <property name="text">
-       <string>Origin</string>
-      </property>
-      <property name="font">
-       <font>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
-      </property>
-     </column>
-     <column>
-      <property name="text">
-       <string>Translation</string>
-      </property>
-      <property name="font">
-       <font>
-        <weight>75</weight>
-        <bold>true</bold>
-       </font>
-      </property>
-     </column>
     </widget>
    </item>
    <item alignment="Qt::AlignRight">
@@ -147,17 +74,6 @@
  </widget>
  <customwidgets>
   <customwidget>
-   <class>CustomTableWidget</class>
-   <extends>QTableWidget</extends>
-   <header>Ui/TranslateView.h</header>
-   <slots>
-    <signal>rowClickedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
-    <signal>rowChangedSignal(PyQt_PyObject,PyQt_PyObject)</signal>
-    <slot>changeTextFromTextEdit(PyQt_PyObject,PyQt_PyObject)</slot>
-    <slot>clearTableSlot()</slot>
-   </slots>
-  </customwidget>
-  <customwidget>
    <class>ExpendedEdit</class>
    <extends>QWidget</extends>
    <header>Ui/TranslateView.h</header>
@@ -165,7 +81,6 @@
   </customwidget>
  </customwidgets>
  <tabstops>
-  <tabstop>translationTable</tabstop>
   <tabstop>autoTranslateAllButton</tabstop>
  </tabstops>
  <resources/>

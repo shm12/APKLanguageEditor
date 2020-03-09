@@ -60,4 +60,4 @@ class Tabs(QtWidgets.QTabWidget):
     def build(self):
         w = self.currentWidget()
         if w:
-            w.rebuild()   
+            w.build()   

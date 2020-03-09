@@ -16,22 +16,18 @@ class Translator(wrrapers._BaseWrapper):
 
     @property
     def ui(self):
-        try:
-            if not self._ui:
-                self._ui = TranslateView()
-                self._ui.setData(self.data)
-                self.itemChanged.connect(self._ui.updateRow)
-                self.dataChanged.connect(self._dataChangedSlot)
-                self._ui.translateRequested.connect(self.auto_translate_items)
-                self._ui.keepRequested.connect(self.keep_items)
-                self._ui.saveRequested.connect(self.save)
-        except Exception as e:
-            print(e)
+        if not self._ui:
+            self._ui = TranslateView()
+            self._ui.setData(self.data)
+            self.itemChanged.connect(self._ui.updateRow)
+            self.dataChanged.connect(self._dataChangedSlot)
+            self._ui.translateRequested.connect(self.auto_translate_items)
+            self._ui.keepRequested.connect(self.keep_items)
+            self._ui.saveRequested.connect(self.save)
         return self._ui
 
     def _dataChangedSlot(self):
         self._ui.setData(self.data)
-
 
     def auto_translate_items(self, items):
         self._stop = False
