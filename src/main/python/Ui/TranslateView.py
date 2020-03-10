@@ -60,7 +60,6 @@ class TableModel(QtCore.QAbstractTableModel):
     def data(self, QModelIndex, role=None):
         row = QModelIndex.row()
         column = QModelIndex.column()
-
         if role in (QtCore.Qt.EditRole, QtCore.Qt.DisplayRole):
             if column == self.internal_headers.index('Translation') and \
                     not self.is_item_active(row):
@@ -286,6 +285,7 @@ class TranslateView(getUiClass(UI_FILE)):
             self.expendedEdit.refreshTranslation()
 
     def setActiveRow(self, new, prev):
+        new = new if self.untrans_visible else self.filter_model.mapToSource(new)
         row = new.row()
         self.activeRow = row
         self.expendedEdit.setData(self.model.internal_data[row])
@@ -344,16 +344,24 @@ class TranslateView(getUiClass(UI_FILE)):
 
     def set_untrans_visible(self, value):
         self.untrans_visible = value
+        self.translationTable.selectionModel().currentChanged.connect(self.setActiveRow)
 
     def _generic_selection_action(self, signal):
-        rows = self.translationTable.selectionModel().selectedRows()
+        rows = self.selectedRows()
         signal.emit([i.row() for i in rows])
         self.expendedEdit.refresh()
 
+    def selectedRows(self):
+        rows = self.translationTable.selectionModel().selectedRows()
+        if self.untrans_visible:
+            return rows
+        else:
+            return [self.filter_model.mapToSource(i) for i in rows]
+            
     # Copy operations
     def copy_selection(self):
         ret = ''
-        rows = self.translationTable.selectionModel().selectedRows()
+        rows = self.selectedRows()
         for row in rows:
             row = row.row()
             ret += f"Name: {self.model.internal_data[row]['Name']}\n"
@@ -364,7 +372,7 @@ class TranslateView(getUiClass(UI_FILE)):
 
     def copy_selection_name(self):
         ret = ''
-        rows = self.translationTable.selectionModel().selectedRows()
+        rows = self.selectedRows()
         for row in rows:
             ret = ret + '\n' if ret else ''
             row = row.row()
@@ -373,7 +381,7 @@ class TranslateView(getUiClass(UI_FILE)):
 
     def copy_selection_origin(self):
         ret = ''
-        rows = self.translationTable.selectionModel().selectedRows()
+        rows = self.selectedRows()
         for row in rows:
             ret = ret + '\n' if ret else ''
             row = row.row()
@@ -382,7 +390,7 @@ class TranslateView(getUiClass(UI_FILE)):
 
     def copy_selection_translation(self):
         ret = ''
-        rows = self.translationTable.selectionModel().selectedRows()
+        rows = self.selectedRows()
         for row in rows:
             ret = ret + '\n' if ret else ''
             row = row.row()
@@ -393,7 +401,7 @@ class TranslateView(getUiClass(UI_FILE)):
     def paste(self):
         text = ApplicationContext.app.clipboard().text()
         column = self.model.internal_headers.index('Translation')
-        rows = self.translationTable.selectionModel().selectedRows()
+        rows = self.selectedRows()
         for row in rows:
             row = row.row()
             self.model.setData(self.model.createIndex(row, column), text, QtCore.Qt.EditRole)
