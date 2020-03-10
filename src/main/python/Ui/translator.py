@@ -23,6 +23,7 @@ class Translator(wrrapers._BaseWrapper):
             self.dataChanged.connect(self._dataChangedSlot)
             self._ui.translateRequested.connect(self.auto_translate_items)
             self._ui.keepRequested.connect(self.keep_items)
+            self._ui.makeUntraslatableRequested.connect(self.set_items_untranslatable)
             self._ui.saveRequested.connect(self.save)
         return self._ui
 
@@ -55,7 +56,15 @@ class Translator(wrrapers._BaseWrapper):
     def keep_items(self, items):
         for item in items:
             self.keep_item(item)
-    
+
+    def set_items_untranslatable(self, items):
+        for item in items:
+            self.set_item_untraslatable(item)
+
+    def set_items_translatable(self, items):
+        for item in items:
+            self.set_item_translatable(item)
+
     def focused(self, *args, **kwargs):
         pass
 

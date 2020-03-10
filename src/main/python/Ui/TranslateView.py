@@ -35,6 +35,7 @@ class TableModel(QtCore.QAbstractTableModel):
         super(TableModel, self).__init__(*args, **kwargs)
         self._data = []
         self._headers = []
+        self._palette_getter = lambda :None
 
     def rowCount(self, parent=None, *args, **kwargs):
         return len(self.internal_data)
@@ -46,6 +47,14 @@ class TableModel(QtCore.QAbstractTableModel):
         if role == QtCore.Qt.DisplayRole:
             if Qt_Orientation == QtCore.Qt.Horizontal:
                 return self.internal_headers[column]
+        if Qt_Orientation == QtCore.Qt.Vertical:
+            row = column
+            if item_is_untranslatable(self.internal_data[row]):
+                if role == QtCore.Qt.BackgroundColorRole:
+                    return self._palette_getter().brush(QtGui.QPalette.Disabled, QtGui.QPalette.Background)
+                if role == QtCore.Qt.TextColorRole:
+                    return self._palette_getter().brush(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText)
+
         return super(TableModel, self).headerData(column, Qt_Orientation, role)
 
     def data(self, QModelIndex, role=None):
@@ -53,7 +62,17 @@ class TableModel(QtCore.QAbstractTableModel):
         column = QModelIndex.column()
 
         if role in (QtCore.Qt.EditRole, QtCore.Qt.DisplayRole):
+            if column == self.internal_headers.index('Translation') and \
+                    not self.is_item_active(row):
+                return QtCore.QVariant()
+
             return self.internal_data[row][self.internal_headers[column]]
+
+        if item_is_untranslatable(self.internal_data[QModelIndex.row()]):
+            if role == QtCore.Qt.BackgroundColorRole:
+                return self._palette_getter().brush(QtGui.QPalette.Disabled, QtGui.QPalette.Background)
+            if role == QtCore.Qt.TextColorRole:
+                return self._palette_getter().brush(QtGui.QPalette.Disabled, QtGui.QPalette.WindowText)
 
         # Default
         return QtCore.QVariant()
@@ -63,6 +82,7 @@ class TableModel(QtCore.QAbstractTableModel):
             row = QModelIndex.row()
             column = QModelIndex.column()
             self.internal_data[row][self.internal_headers[column]] = str(Any)
+            self.internal_data[row]['keep'] = False
             self.dataChanged.emit(QModelIndex, QModelIndex)
 
             return True
@@ -73,6 +93,7 @@ class TableModel(QtCore.QAbstractTableModel):
 
     def flags(self, QModelIndex):
         column = QModelIndex.column()
+        row = QModelIndex.row()
 
         flags = QtCore.Qt
         ret = (
@@ -80,10 +101,16 @@ class TableModel(QtCore.QAbstractTableModel):
                 flags.ItemIsSelectable
         )
 
-        if self.internal_headers[column] == 'Translation':
+        if self.internal_headers[column] == 'Translation' and not \
+                item_is_untranslatable(self.internal_data[row]):
             ret = ret | flags.ItemIsEditable
 
         return ret
+
+    def is_item_active(self, item):
+        item = self.internal_data[item] if type(item) is int else item
+        return 'translatable' not in item['element'].attrib or \
+               item['element'].attrib['translatable'] == 'true'
 
     @property
     def internal_data(self):
@@ -104,6 +131,11 @@ class TableModel(QtCore.QAbstractTableModel):
         self.beginResetModel()
         self._headers = headers
         self.endResetModel()
+
+
+class Filter(QtCore.QSortFilterProxyModel):
+    def filterAcceptsRow(self, p_int, QModelIndex):
+        return self.sourceModel().is_item_active(p_int)
 
 
 class ExpendedEdit(getUiClass(EXTENDEDEDIT_FILE)):
@@ -149,11 +181,20 @@ class ExpendedEdit(getUiClass(EXTENDEDEDIT_FILE)):
     # Slots
     @QtCore.pyqtSlot('PyQt_PyObject')
     def setData(self, data):
-        self.setEnabled(True)
         self.data = data
-        self.originTextEdit.setText(data['Origin'])
-        self.translationTextEdit.setText(data['Translation'])
-        self.setTitle(data['Name'])
+        if item_is_untranslatable(data):
+            self.setTitle(None)
+            self.originTextEdit.setText(None)
+            self.translationTextEdit.setText(None)
+            self.setEnabled(False)
+        else:
+            self.setEnabled(True)
+            self.originTextEdit.setText(data['Origin'])
+            self.translationTextEdit.setText(data['Translation'])
+            self.setTitle(data['Name'])
+
+    def refresh(self):
+        self.setData(self.data)
 
     @QtCore.pyqtSlot()
     def refreshTranslation(self, *args, **kwargs):
@@ -199,6 +240,8 @@ class TranslateView(getUiClass(UI_FILE)):
 
     def __init__(self, *args, **kwargs):
         self.model = TableModel()
+        self.filter_model = Filter()
+        self.filter_model.setSourceModel(self.model)
         super(TranslateView, self).__init__(*args, **kwargs)
         self.activeRow = None
 
@@ -217,6 +260,7 @@ class TranslateView(getUiClass(UI_FILE)):
         self.ctx_menu.copy_origin.triggered.connect(self.copy_selection_origin)
         self.ctx_menu.copy_translation.triggered.connect(self.copy_selection_translation)
         self.ctx_menu.paste.triggered.connect(self.paste)
+        self.ctx_menu.untrans_visible.toggled.connect(self.set_untrans_visible)
 
         # Expended edit signals
         self.expendedEdit.translationChanged.connect(self.updateActiveRow)
@@ -225,13 +269,15 @@ class TranslateView(getUiClass(UI_FILE)):
         self.expendedEdit.makeUntraslatableClicked.connect(self._makeUntraslatableActive)
 
         # Translation Table signals
-        self.translationTable.setModel(self.model)
+        self.model._palette_getter = self.translationTable.palette
+        self.translationTable.setModel(self.filter_model)
         self.translationTable.selectionModel().currentChanged.connect(self.setActiveRow)
         self.model.dataChanged.connect(self._rowChangedSlot)
         self.autoTranslateAllButton.clicked.connect(self._translateAll)
 
     def showMenu(self, pos):
         self.ctx_menu.paste.setEnabled(bool(ApplicationContext.app.clipboard().text()))
+        self.ctx_menu.untrans_visible.setChecked(self.untrans_visible)
         self.ctx_menu.exec(QtGui.QCursor().pos())
 
     # Inner things
@@ -257,9 +303,7 @@ class TranslateView(getUiClass(UI_FILE)):
         self.translateRequested.emit(list(range(len(self.model.internal_data))))
 
     def _translateSelection(self):
-        rows = self.translationTable.selectionModel().selectedRows()
-        self.translateRequested.emit([i.row() for i in rows])
-        # self.tran
+        self._generic_selection_action(self.translateRequested)
 
     def _translateActive(self):
         if self.activeRow is None:
@@ -270,8 +314,7 @@ class TranslateView(getUiClass(UI_FILE)):
         self.keepRequested.emit(list(range(len(self.model.internal_data))))
 
     def _keepSelection(self):
-        rows = self.translationTable.selectionModel().selectedRows()
-        self.keepRequested.emit([i.row() for i in rows])
+        self._generic_selection_action(self.keepRequested)
 
     def _keepActive(self):
         if self.activeRow is None:
@@ -280,14 +323,32 @@ class TranslateView(getUiClass(UI_FILE)):
 
     def _makeUntraslatableAll(self):
         self.makeUntraslatableRequested.emit(list(range(len(self.model.internal_data))))
+        self.expendedEdit.refresh()
 
     def _makeUntraslatableSelection(self):
-        pass
+        self._generic_selection_action(self.makeUntraslatableRequested)
 
     def _makeUntraslatableActive(self):
         if self.activeRow is None:
             return
         self.makeUntraslatableRequested.emit([self.activeRow])
+        self.expendedEdit.refresh()
+
+    @property
+    def untrans_visible(self):
+        return self.translationTable.model() is self.model
+
+    @untrans_visible.setter
+    def untrans_visible(self, value):
+        self.translationTable.setModel(self.model if value else self.filter_model)
+
+    def set_untrans_visible(self, value):
+        self.untrans_visible = value
+
+    def _generic_selection_action(self, signal):
+        rows = self.translationTable.selectionModel().selectedRows()
+        signal.emit([i.row() for i in rows])
+        self.expendedEdit.refresh()
 
     # Copy operations
     def copy_selection(self):
@@ -360,6 +421,9 @@ class TableContextMenu(QtWidgets.QMenu):
         self.copy_translation = QtWidgets.QAction('Copy Translation')
         self.paste = QtWidgets.QAction('Paste')
 
+        self.untrans_visible = QtWidgets.QAction('Show Untranslatable Strings')
+        self.untrans_visible.setCheckable(True)
+
         self.addActions((
                 self.translate,
                 self.keep,
@@ -373,3 +437,12 @@ class TableContextMenu(QtWidgets.QMenu):
                 self.copy_translation,
                 self.paste,
         ))
+        self.addSeparator()
+        self.addActions((
+            self.untrans_visible,
+        ))
+
+
+def item_is_untranslatable(item):
+    return 'translatable' in item['element'].attrib and \
+           item['element'].attrib['translatable'] == 'false'

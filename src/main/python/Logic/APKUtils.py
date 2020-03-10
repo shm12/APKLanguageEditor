@@ -50,7 +50,7 @@ def getXmlTranslatables(path):
     for typ in ('string-array', 'plurals'):
         for item in xml.findall(typ):
             l += item
-    return [i for i in l if isElementTranslatable(i) and i.tag in ('item', 'string')]
+    return [i for i in l if i.tag in ('item', 'string')]
 
 def getAPKTranslatableXmls(dpath):
     valuesPath = os.path.join(dpath, 'res', 'values')

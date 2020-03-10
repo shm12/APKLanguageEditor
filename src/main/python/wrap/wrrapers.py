@@ -37,10 +37,26 @@ class _BaseWrapper(QtCore.QObject, translator._BaseData):
         self.itemChanged.emit(item, index)
 
     def keep_item(self, item: Union[dict, int]):
-        super(_BaseWrapper, self).keep_item(item)
-        item = self.data[item] if type(item) is int else item
-        index = self.data.index(item)
-        self.itemChanged.emit(item, index)
+        self._generic_items_operation(super(_BaseWrapper, self).keep_item, item)
+
+    def set_item_untraslatable(self, item):
+        self._generic_items_operation(super(_BaseWrapper, self).set_item_untraslatable, [item])
+
+    def set_item_translatable(self, item):
+        self._generic_items_operation(super(_BaseWrapper, self).set_item_translatable, [item])
+
+    def set_items_untraslatable(self, items):
+        self._generic_items_operation(self.set_item_untraslatable, items)
+
+    def set_items_translatable(self, items):
+        self._generic_items_operation(self.set_item_translatable, items)
+
+    def _generic_items_operation(self, operation, items):
+        for item in items:
+            operation(item)
+            item = self.data[item] if type(item) is int else item
+            index = self.data.index(item)
+            self.itemChanged.emit(item, index)
 
     def _set_parent(self, parent):
         super(_BaseWrapper, self)._set_parent(parent)
@@ -72,6 +88,7 @@ class _BaseTreeWrapper(_BaseWrapper, translator._BaseTree):
         # print('Wrapper open')
         thread = Worker(target=super(_BaseTreeWrapper, self)._open)
         self.threadpool.start(thread)
+
 
 class Xml(_BaseWrapper, translator.Xml):
     pass

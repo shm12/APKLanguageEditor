@@ -103,6 +103,8 @@ class _BaseData(object):
 
     def auto_translate_item(self, item: Union[dict, int]):
         item = self.data[item] if type(item) is int else item
+        if not self.item_is_translatable(item):
+            return
         if item[DataKeys.ORIGIN]:
             item[DataKeys.TRANSLATION] = self._auto_translate(item[DataKeys.ORIGIN])
             item[DataKeys.KEEP] = False
@@ -116,7 +118,19 @@ class _BaseData(object):
         item[DataKeys.TRANSLATION] = None
 
     def set_item_untraslatable(self, item: Union[dict, int]):
-        pass
+        item = self.data[item] if type(item) is int else item
+        element = item['element']
+        element.attrib['translatable'] = 'false'
+
+    def set_item_translatable(self, item: Union[dict, int]):
+        item = self.data[item] if type(item) is int else item
+        element = item['element']
+        element.attrib['translatable'] = 'true'
+
+    def item_is_translatable(self, item: Union[dict, int]):
+        item = self.data[item] if type(item) is int else item
+        element = item['element']
+        return 'translatable' not in element.attrib or element.attrib['translatable'] == 'true'
 
     def _data_changed(self):
         self.parent_el._child_data_changed(self) if self.parent_el else None
@@ -168,13 +182,6 @@ class _BaseTree(_BaseData):
         assert child in self.get_children(), 'Trying to remove child that not exists'
         self.children.remove(child)
 
-    def set_item_untraslatable(self, item: Union[dict, int]):
-        item = self.data[item] if type(item) is int else item
-        for child in self.get_children():
-            if item in child.data:
-                child.set_item_untraslatable(item)
-                break
-
     def build(self):
         pass
 
@@ -195,6 +202,9 @@ class Xml(_BaseData):
     """
     Description for Xml.
     """
+    def __init__(self, *args, **kwargs):
+        super(Xml, self).__init__(*args, **kwargs)
+        self.untranslatables = []
 
     def _open(self):
         dst_xml = ET.parse(self.dest) if (self.dest and os.path.exists(self.dest)) else None
@@ -223,22 +233,49 @@ class Xml(_BaseData):
             l.append(entry)
         self.data = l
 
-    def set_item_untraslatable(self, item: Union[dict, int]):
-        element = item['element']
-        element.attrib['translatable'] = 'false'
-        xml = element.getroottree()
-        xml.write(self.path, xml_declaration=True, encoding="UTF-8")
-        self._open()
-
     def save(self):
         if not self.data:
             return
 
         # Initialize
         xml = self.data[0]['element'].getroottree()
-        tree_items = {}
 
-        # Start loop...
+        # Save untranslatables
+        untranslatable_tree_items = {}
+        untranslatable_items = []
+        for i in self.data:
+            el = i['element']
+            if 'translatable' in el.attrib and el.attrib['translatable'] == 'false':
+                parent = el.getparent()
+                if el.tag == 'item':
+                    # This is a plural or a string-array. We save them for later care.
+                    if parent in untranslatable_tree_items:
+                        untranslatable_tree_items[parent] += [el]
+                    else:
+                        untranslatable_tree_items[parent] = [el]
+                else:
+                    untranslatable_items.append(el)
+
+                self.data.remove(i)
+
+        # Now we take care of plurals and string-arrays
+        for parent, items in untranslatable_tree_items.items():
+            if len(items) == len(parent.items()[0]):
+                untranslatable_items.append(parent)
+
+        xml.write(self.path, xml_declaration=True, encoding="UTF-8")
+
+        # Clear untranslatables from dest
+        for element in untranslatable_items:
+            element.getparent().remove(element)
+
+        # Clear apktool dummy items
+        for i in xml.findall('//item'):
+            if 'name' in i.attrib and i.attrib['name'].startswith('APKTOOL_DUMMY'):
+                i.getparent().remove(i)
+
+        # Save to dest
+        tree_items = {}
         for i in self.data:
             el = i['element']
             if i['keep'] or i['Translation'] is None:
@@ -264,7 +301,7 @@ class Xml(_BaseData):
         else:
             xml.write(self.dest, xml_declaration=True, encoding="UTF-8")
 
-        # Ropen (for xml elements reload)
+        # Reload data (for the xml elements)
         self._open()
 
 
