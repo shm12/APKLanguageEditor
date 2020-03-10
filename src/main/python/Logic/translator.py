@@ -117,15 +117,10 @@ class _BaseData(object):
         item[DataKeys.KEEP] = True
         item[DataKeys.TRANSLATION] = None
 
-    def set_item_untraslatable(self, item: Union[dict, int]):
+    def set_item_translatable(self, item: Union[dict, int], value: bool):
         item = self.data[item] if type(item) is int else item
         element = item['element']
-        element.attrib['translatable'] = 'false'
-
-    def set_item_translatable(self, item: Union[dict, int]):
-        item = self.data[item] if type(item) is int else item
-        element = item['element']
-        element.attrib['translatable'] = 'true'
+        element.attrib['translatable'] = 'true' if value else 'false'
 
     def item_is_translatable(self, item: Union[dict, int]):
         item = self.data[item] if type(item) is int else item
@@ -354,7 +349,8 @@ class Apk(_BaseTree):
 
     @staticmethod
     def is_decompiled_apk(path):
-        return 'apktool.yml' in os.listdir(path)
+        return bool(getAPKTranslatableXmls(path))
+        # return 'apktool.yml' in os.listdir(path)
 
 
 class Rom(_BaseTree):

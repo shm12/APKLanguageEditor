@@ -17,14 +17,17 @@ class Translator(wrrapers._BaseWrapper):
     @property
     def ui(self):
         if not self._ui:
-            self._ui = TranslateView()
-            self._ui.setData(self.data)
-            self.itemChanged.connect(self._ui.updateRow)
-            self.dataChanged.connect(self._dataChangedSlot)
-            self._ui.translateRequested.connect(self.auto_translate_items)
-            self._ui.keepRequested.connect(self.keep_items)
-            self._ui.makeUntraslatableRequested.connect(self.set_items_untranslatable)
-            self._ui.saveRequested.connect(self.save)
+            try:
+                self._ui = TranslateView()
+                self._ui.setData(self.data)
+                self.itemChanged.connect(self._ui.updateRow)
+                self.dataChanged.connect(self._dataChangedSlot)
+                self._ui.translateRequested.connect(self.auto_translate_items)
+                self._ui.keepRequested.connect(self.keep_items)
+                self._ui.setTranslatableRequested.connect(self.set_items_translatable)
+                self._ui.saveRequested.connect(self.save)
+            except Exception as e:
+                print(e)
         return self._ui
 
     def _dataChangedSlot(self):
@@ -53,20 +56,8 @@ class Translator(wrrapers._BaseWrapper):
                 break
             self.auto_translate_item(item)
 
-    def keep_items(self, items):
-        for item in items:
-            self.keep_item(item)
-
-    def set_items_untranslatable(self, items):
-        for item in items:
-            self.set_item_untraslatable(item)
-
-    def set_items_translatable(self, items):
-        for item in items:
-            self.set_item_translatable(item)
-
     def focused(self, *args, **kwargs):
-        pass
+        self.ui.focus()
 
 
 class Xml(Translator, wrrapers.Xml):

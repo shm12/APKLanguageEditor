@@ -1,14 +1,9 @@
 import os
-import threading
 import sys
 
-DIR = os.path.join(os.path.dirname(__file__))
-sys.path.append(os.path.join(DIR, '..'))
-
 from PyQt5 import QtCore, QtGui, QtWidgets
-from Ui.UiLoader import getUiClass
 from Ui.iconObjects import xmlIcon, romIcon, apkIcon
-
+from Ui.translator import Xml, Apk, Rom
 from Logic.APKUtils import isFileOfType
 
       
@@ -16,7 +11,11 @@ class ProjectTreeItem(QtWidgets.QTreeWidgetItem):
     """
     Description for ProjectTreeItem.
     """
-    
+    ICON_MAP = {
+        Xml: xmlIcon,
+        Apk: apkIcon,
+        Rom: romIcon,
+    }
     def __init__(self, translator, children=False, *args, **kwargs):
         super(ProjectTreeItem, self).__init__(*args, **kwargs)
         self.translator = translator
@@ -24,8 +23,7 @@ class ProjectTreeItem(QtWidgets.QTreeWidgetItem):
         self.setFlags(self.flags() | QtCore.Qt.ItemIsSelectable)
         self.exists = []
 
-        typ = self.translator.name.split('.')[-1]
-        icon = xmlIcon() if typ == 'xml' else apkIcon() if typ == 'apk' else romIcon()
+        icon = self.ICON_MAP[type(translator)]()
 
         self.setIcon(0, icon)
 

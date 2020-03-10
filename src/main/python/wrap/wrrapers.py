@@ -4,6 +4,7 @@ from Logic import translator
 from Ui.threads import Worker, Pool
 from appctx import ApplicationContext
 
+
 class _BaseWrapper(QtCore.QObject, translator._BaseData):
     """
     Here we define all the common slots and signal.
@@ -31,29 +32,23 @@ class _BaseWrapper(QtCore.QObject, translator._BaseData):
         super(_BaseWrapper, self)._data_changed()
 
     def auto_translate_item(self, item: Union[dict, int]):
-        super(_BaseWrapper, self).auto_translate_item(item)
-        item = self.data[item] if type(item) is int else item
-        index = self.data.index(item)
-        self.itemChanged.emit(item, index)
+        self._generic_items_operation(super(_BaseWrapper, self).auto_translate_item, [item])
 
     def keep_item(self, item: Union[dict, int]):
-        self._generic_items_operation(super(_BaseWrapper, self).keep_item, item)
+        self._generic_items_operation(super(_BaseWrapper, self).keep_item, [item])
 
-    def set_item_untraslatable(self, item):
-        self._generic_items_operation(super(_BaseWrapper, self).set_item_untraslatable, [item])
+    def keep_items(self, items):
+        self._generic_items_operation(super(_BaseWrapper, self).keep_item, items)
 
-    def set_item_translatable(self, item):
-        self._generic_items_operation(super(_BaseWrapper, self).set_item_translatable, [item])
+    def set_item_translatable(self, item, value):
+        self._generic_items_operation(super(_BaseWrapper, self).set_item_translatable, [item], value)
 
-    def set_items_untraslatable(self, items):
-        self._generic_items_operation(self.set_item_untraslatable, items)
+    def set_items_translatable(self, items, value):
+        self._generic_items_operation(super(_BaseWrapper, self).set_item_translatable, items, value)
 
-    def set_items_translatable(self, items):
-        self._generic_items_operation(self.set_item_translatable, items)
-
-    def _generic_items_operation(self, operation, items):
+    def _generic_items_operation(self, operation, items, *args, **kwargs):
         for item in items:
-            operation(item)
+            operation(item, *args, **kwargs)
             item = self.data[item] if type(item) is int else item
             index = self.data.index(item)
             self.itemChanged.emit(item, index)
@@ -85,7 +80,6 @@ class _BaseTreeWrapper(_BaseWrapper, translator._BaseTree):
         super(_BaseTreeWrapper, self).add_child(*args, threadpool=self.threadpool, **kwargs)
 
     def _open(self):
-        # print('Wrapper open')
         thread = Worker(target=super(_BaseTreeWrapper, self)._open)
         self.threadpool.start(thread)
 

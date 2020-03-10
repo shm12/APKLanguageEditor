@@ -233,7 +233,7 @@ class TranslateView(getUiClass(UI_FILE)):
     """
     translateRequested = QtCore.pyqtSignal(list, arguments=['Items'])
     keepRequested = QtCore.pyqtSignal(list, arguments=['Items'])
-    makeUntraslatableRequested = QtCore.pyqtSignal(list, arguments=['Items'])
+    setTranslatableRequested = QtCore.pyqtSignal(list, bool, arguments=['Items', 'Value'])
     saveRequested = QtCore.pyqtSignal()
     buildRequested = QtCore.pyqtSignal()
 
@@ -253,7 +253,7 @@ class TranslateView(getUiClass(UI_FILE)):
         self.ctx_menu = TableContextMenu()
         self.ctx_menu.translate.triggered.connect(self._translateSelection)
         self.ctx_menu.keep.triggered.connect(self._keepSelection)
-        self.ctx_menu.make_untrans.triggered.connect(self._makeUntraslatableSelection)
+        self.ctx_menu.translatable.toggled.connect(self.setTranslatableSelection)
         self.ctx_menu.copy.triggered.connect(self.copy_selection)
         self.ctx_menu.copy_name.triggered.connect(self.copy_selection_name)
         self.ctx_menu.copy_origin.triggered.connect(self.copy_selection_origin)
@@ -277,7 +277,12 @@ class TranslateView(getUiClass(UI_FILE)):
     def showMenu(self, pos):
         self.ctx_menu.paste.setEnabled(bool(ApplicationContext.app.clipboard().text()))
         self.ctx_menu.untrans_visible.setChecked(self.untrans_visible)
+        self.ctx_menu.translatable.setChecked(self.model.is_item_active(self.activeRow))
         self.ctx_menu.exec(QtGui.QCursor().pos())
+
+    def focus(self):
+        self.setFocus()
+        self.translationTable.setFocus()
 
     # Inner things
     def _rowChangedSlot(self, start, end):
@@ -321,9 +326,8 @@ class TranslateView(getUiClass(UI_FILE)):
             return
         self.keepRequested.emit([self.activeRow])
 
-    def _makeUntraslatableAll(self):
-        self.makeUntraslatableRequested.emit(list(range(len(self.model.internal_data))))
-        self.expendedEdit.refresh()
+    def setTranslatableSelection(self, value):
+        self._generic_selection_action(self.setTranslatableRequested, value)
 
     def _makeUntraslatableSelection(self):
         self._generic_selection_action(self.makeUntraslatableRequested)
@@ -331,7 +335,7 @@ class TranslateView(getUiClass(UI_FILE)):
     def _makeUntraslatableActive(self):
         if self.activeRow is None:
             return
-        self.makeUntraslatableRequested.emit([self.activeRow])
+        self.setTranslatableRequested.emit([self.activeRow], False)
         self.expendedEdit.refresh()
 
     @property
@@ -346,9 +350,9 @@ class TranslateView(getUiClass(UI_FILE)):
         self.untrans_visible = value
         self.translationTable.selectionModel().currentChanged.connect(self.setActiveRow)
 
-    def _generic_selection_action(self, signal):
+    def _generic_selection_action(self, signal, *args, **kwargs):
         rows = self.selectedRows()
-        signal.emit([i.row() for i in rows])
+        signal.emit([i.row() for i in rows], *args, **kwargs)
         self.expendedEdit.refresh()
 
     def selectedRows(self):
@@ -357,6 +361,7 @@ class TranslateView(getUiClass(UI_FILE)):
             return rows
         else:
             return [self.filter_model.mapToSource(i) for i in rows]
+
             
     # Copy operations
     def copy_selection(self):
@@ -421,7 +426,8 @@ class TableContextMenu(QtWidgets.QMenu):
         super(TableContextMenu, self).__init__(*args, **kwargs)
         self.translate = QtWidgets.QAction('Auto Translate')
         self.keep = QtWidgets.QAction('Keep Origin')
-        self.make_untrans = QtWidgets.QAction('Make Untrasltable')
+        self.translatable = QtWidgets.QAction('Translatable')
+        self.translatable.setCheckable(True)
 
         self.copy = QtWidgets.QAction('Copy')
         self.copy_name = QtWidgets.QAction('Copy Name')
@@ -435,7 +441,7 @@ class TableContextMenu(QtWidgets.QMenu):
         self.addActions((
                 self.translate,
                 self.keep,
-                self.make_untrans,
+                self.translatable,
         ))
         self.addSeparator()
         self.addActions((
