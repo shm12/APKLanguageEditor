@@ -1,2 +1,2 @@
 # APKLanguageEditor
-AnAn advance editor for editing strings.xml of apk files
+An advance editor for editing strings.xml of apk files
